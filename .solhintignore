@@ -1,0 +1,5 @@
+contracts/common/meta-transactions/ContentMixin.sol
+contracts/common/meta-transactions/Initializable.sol
+contracts/common/meta-transactions/EIP712Base.sol
+contracts/common/meta-transactions/NativeMetaTransaction.sol
+contracts/ERC1155Tradable.sol
