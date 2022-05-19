@@ -9,10 +9,6 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
 
-
 contract CarbonReceipt is ERC20PresetMinterPauser {
-
-    constructor() ERC20PresetMinterPauser("CarbonXReceipt", "CRXR") {
-        
-    }
+    constructor() ERC20PresetMinterPauser("CarbonXReceipt", "CRXR") {}
 }
