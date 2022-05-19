@@ -51,27 +51,44 @@ contract CarbonVault is ERC1155, ERC1155Supply, ERC1155Receiver, Ownable {
      * To learn more about hooks, head to xref:ROOT:extending-contracts.adoc#using-hooks[Using Hooks].
      */
     function _beforeTokenTransfer(
-        address /*operator*/,
-        address /*from*/,
-        address /*to*/,
-        uint256[] memory /*ids*/,
-        uint256[] memory /*amounts*/,
+        address, /*operator*/
+        address, /*from*/
+        address, /*to*/
+        uint256[] memory, /*ids*/
+        uint256[] memory, /*amounts*/
         bytes memory /*data*/
     ) internal virtual override(ERC1155, ERC1155Supply) {
         revert("Not allowed");
     }
 
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155, ERC1155Receiver) returns (bool) {
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(ERC1155, ERC1155Receiver)
+        returns (bool)
+    {
         return super.supportsInterface(interfaceId);
     }
 
-    function onERC1155Received(address /*operator*/, address from, uint256 /*tokenId*/, uint256 amount, bytes memory) public virtual override returns (bytes4) {
+    function onERC1155Received(
+        address, /*operator*/
+        address from,
+        uint256, /*tokenId*/
+        uint256 amount,
+        bytes memory
+    ) public virtual override returns (bytes4) {
         _receiptToken.mint(from, amount);
         return this.onERC1155Received.selector;
     }
 
-    function onERC1155BatchReceived(address, address, uint256[] memory, uint256[] memory, bytes memory) public virtual override returns (bytes4) {
+    function onERC1155BatchReceived(
+        address,
+        address,
+        uint256[] memory,
+        uint256[] memory,
+        bytes memory
+    ) public virtual override returns (bytes4) {
         return this.onERC1155BatchReceived.selector;
     }
-    
 }
