@@ -8,14 +8,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deployer} = await getNamedAccounts();
     console.log("Deployer", deployer)
 
-    const instance = await deploy('CarbonX', {
+    const instance = await deploy('CarbonReceipt', {
         from: deployer,
-        args: ['0xeebA72dcE016a06055dbD0318429053bEd738c7e', 'ipfs://'],
+        args: [],
         log: true,
         autoMine: true, // speed up deployment on local network (ganache, hardhat), no effect on live networks
     });
 
-    log("Factory: " + instance.address);
+    log("Receipt: " + instance.address);
 
     // The transaction that was sent to the network to deploy the Contract
     log("- Transaction: " + instance.transactionHash);
@@ -24,4 +24,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
 };
 export default func;
-func.dependencies = ['CarbonX'];
+func.dependencies = ['CarbonReceipt'];
