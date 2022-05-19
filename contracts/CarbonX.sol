@@ -13,20 +13,20 @@ import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 
 contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable {
     using ECDSA for bytes32;
-    
+
     address private _signer;
 
     mapping(uint256 => string) private _tokenUris;
-    
+
     event SignerChanged(address indexed oldSigner, address indexed _signer);
-    
+
     modifier tokenExists(uint256 tokenId) {
         require(exists(tokenId));
         _;
     }
 
     constructor(address signer_, string memory baseUri_) ERC1155(baseUri_) {
-        _signer =signer_;        
+        _signer = signer_;
     }
 
     /// @notice Helper to know signers address
@@ -73,7 +73,7 @@ contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable {
     ) public view returns (bytes32) {
         return keccak256(abi.encode(to, tokenId, amount, tokenUri, address(this)));
     }
-    
+
     function create(
         address to,
         uint256 tokenId,
@@ -91,7 +91,7 @@ contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable {
         bytes memory data;
         _mint(to, tokenId, amount, data);
 
-        if(bytes(tokenUri).length > 0) {
+        if (bytes(tokenUri).length > 0) {
             _setTokenUri(tokenId, tokenUri);
         }
     }
@@ -124,7 +124,6 @@ contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable {
     ) external tokenExists(tokenId) {
         mintTo(msg.sender, tokenId, amount, signature);
     }
-
 
     /**
      * @dev Hook that is called before any token transfer. This includes minting
@@ -173,5 +172,4 @@ contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable {
         uint256 balance = address(this).balance;
         payable(msg.sender).transfer(balance);
     }
-    
 }
