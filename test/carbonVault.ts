@@ -64,6 +64,8 @@ describe('CarbonX Vault Tests', () => {
         await vault.deployed();
         
         await receipt.grantRole(await receipt.MINTER_ROLE(), vault.address);
+        
+        console.log(await receipt.MINTER_ROLE());
 
         expect(vault.address).to.properAddress;
         
