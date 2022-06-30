@@ -78,7 +78,7 @@ contract CarbonVault is ERC1155, ERC1155Supply, ERC1155Receiver, Ownable {
         uint256 amount,
         bytes memory
     ) public virtual override returns (bytes4) {
-        _receiptToken.mint(from, amount);
+        _receiptToken.mint(from, amount * (10**18));
         return this.onERC1155Received.selector;
     }
 
