@@ -53,6 +53,7 @@ describe('CarbonX BasicTests', () => {
         const 
             tokenId = 1001,
             amount = 1,
+            maxSupply = 100,
             hash = 'NgcFOAfYXwVrmQrUOyB0U5kWU4w1a8Gf2gPPTPBrGTqTl-6qe7ERStbEMamFV4niv1bhFKI5167vzMLApLOEBs0ArvvUiClrRAFb=w600';
 
         let sigForAxel: string,
@@ -71,7 +72,7 @@ describe('CarbonX BasicTests', () => {
             const balanceBefore = await token.balanceOf(axel.address, tokenId);
             expect(balanceBefore).to.eq(0);
 
-            await axelAsMinter.create(axel.address, tokenId, amount, hash, sigForAxel);
+            await axelAsMinter.create(axel.address, tokenId, amount, maxSupply, hash, sigForAxel);
 
             const balance = await token.balanceOf(axel.address, tokenId);
             expect(balance).to.eq(1);
@@ -83,13 +84,30 @@ describe('CarbonX BasicTests', () => {
             expect(uri).to.eq(hash);
         });
 
+        it('should revert if amount is greater than max supply', async () => {
+            const balanceBefore = await token.balanceOf(axel.address, tokenId);
+            expect(balanceBefore).to.eq(0);
+
+            await expect(axelAsMinter.create(axel.address, tokenId, amount, amount - 1, hash, sigForAxel)).to.be.revertedWith('reverted');
+        });
+
+        it('should not be able to mint exceeding max supply', async () => {
+            const balanceBefore = await token.balanceOf(axel.address, tokenId);
+            expect(balanceBefore).to.eq(0);
+
+            await axelAsMinter.create(axel.address, tokenId, amount, maxSupply, hash, sigForAxel);
+
+            const sigForBen = await createSignature(ben.address, tokenId, maxSupply, '', backend);
+            await expect(axelAsMinter.mintTo(ben.address, tokenId, maxSupply, sigForBen)).to.be.revertedWith('reverted');
+        });
+
         it('can mint more tokens to Others successfully', async () => {
             const totalSupplyBefore = await token.totalSupply(tokenId);
 
             const balanceBefore = await token.balanceOf(ben.address, tokenId);
             expect(balanceBefore).to.eq(0);
 
-            await axelAsMinter.create(axel.address, tokenId, amount, hash, sigForAxel);
+            await axelAsMinter.create(axel.address, tokenId, amount, maxSupply, hash, sigForAxel);
 
             const sigForBen = await createSignature(ben.address, tokenId, 5, '', backend);
             await axelAsMinter.mintTo(ben.address, tokenId, 5, sigForBen);
