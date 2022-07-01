@@ -60,7 +60,7 @@ describe('CarbonX Vault Tests', () => {
 
         const vaultFactory = (await ethers.getContractFactory('CarbonVault', governance)) as CarbonVault__factory;
 
-        vault = await vaultFactory.deploy(receipt.address, 'ipfs://');
+        vault = await vaultFactory.deploy(receipt.address, token.address, 'ipfs://');
         await vault.deployed();
         
         await receipt.grantRole(await receipt.MINTER_ROLE(), vault.address);
