@@ -10,8 +10,9 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
 import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
+import "./ICarbonX.sol";
 
-contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable {
+contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable, ICarbonX {
     using ECDSA for bytes32;
 
     address private _signer;
@@ -186,5 +187,14 @@ contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable {
     function withdraw() external onlyOwner {
         uint256 balance = address(this).balance;
         payable(msg.sender).transfer(balance);
+    }
+    
+    function onSentToVault(
+        address operator,
+        address from,
+        uint256 tokenId,
+        uint256 amount,
+        bytes memory data
+    ) override public  {
     }
 }
