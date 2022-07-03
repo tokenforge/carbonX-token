@@ -10,17 +10,21 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
 import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
+
 import "./ICarbonX.sol";
 
 contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable, ICarbonX {
     using ECDSA for bytes32;
 
+    // Signer
     address private _signer;
-
-    mapping(uint256 => string) private _tokenUris;
-    mapping(uint256 => uint256) private _maxTokenSupplies;
-
     event SignerChanged(address indexed oldSigner, address indexed _signer);
+
+    // Token-URIs
+    mapping(uint256 => string) private _tokenUris;
+
+    // max supplies per TokenID
+    mapping(uint256 => uint256) private _maxTokenSupplies;
 
     modifier tokenExists(uint256 tokenId) {
         require(exists(tokenId));
@@ -38,6 +42,8 @@ contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable, ICarbonX {
     }
 
     function setSigner(address signer_) external onlyOwner {
+        require(signer_ != _signer, "Address is already signer");
+
         address oldSigner = _signer;
 
         _signer = signer_;
@@ -76,6 +82,9 @@ contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable, ICarbonX {
         return keccak256(abi.encode(to, tokenId, amount, tokenUri, address(this)));
     }
 
+    /**
+     * @dev Creates a new token with max supply, mints $amount into $to address
+     */
     function create(
         address to,
         uint256 tokenId,
@@ -108,7 +117,9 @@ contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable, ICarbonX {
         }
     }
 
-    /// @notice Mints token for existing tokenId to a specific beneficiary
+    /// @dev Mints token at beneficiary-address for existing tokenId to a specific beneficiary
+    /// maximum supply may not exceed maxTokenSupplies[tokenId]
+    ///
     /// @param to the beneficiary
     /// @param tokenId the token id
     /// @param amount the amount of tokens
@@ -133,6 +144,11 @@ contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable, ICarbonX {
         _mint(to, tokenId, amount, data);
     }
 
+    /// @dev Mints token into msg.sender for existing tokenId to a specific beneficiary
+    /// maximum supply may not exceed maxTokenSupplies[tokenId]
+    ///
+    /// @param tokenId the token id
+    /// @param amount the amount of tokens
     function mint(
         uint256 tokenId,
         uint256 amount,
@@ -189,11 +205,23 @@ contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable, ICarbonX {
         payable(msg.sender).transfer(balance);
     }
 
-    function onSentToVault(
-        address operator,
-        address from,
-        uint256 tokenId,
-        uint256 amount,
-        bytes memory data
-    ) public override {}
+    function isTransferIntoVaultAccepted(
+        address,
+        address,
+        uint256[] memory,
+        uint256[] memory,
+        bytes memory
+    ) public virtual override returns (bool) {
+        return true;
+    }
+
+    function onTransferIntoVaultSuccessfullyDone(
+        address,
+        address,
+        uint256[] memory,
+        uint256[] memory,
+        bytes memory
+    ) public virtual override returns (bytes4) {
+        return this.onTransferIntoVaultSuccessfullyDone.selector;
+    }
 }
