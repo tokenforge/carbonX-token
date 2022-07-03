@@ -5,12 +5,19 @@
 pragma solidity >=0.8.3;
 
 interface ICarbonX {
-    
-    function onSentToVault(
+    function isTransferIntoVaultAccepted(
         address operator,
         address from,
-        uint256 tokenId,
-        uint256 amount,
+        uint256[] memory tokenIds,
+        uint256[] memory amounts,
         bytes memory data
-    ) external;
+    ) external returns (bool);
+
+    function onTransferIntoVaultSuccessfullyDone(
+        address operator,
+        address from,
+        uint256[] memory tokenIds,
+        uint256[] memory amounts,
+        bytes memory data
+    ) external returns (bytes4);
 }
