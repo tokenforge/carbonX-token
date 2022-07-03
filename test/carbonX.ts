@@ -6,6 +6,7 @@ import {SignerWithAddress} from '@nomiclabs/hardhat-ethers/signers';
 
 import {BigNumber, BigNumberish, Signer} from "ethers";
 import {CarbonX, CarbonX__factory} from "../typechain";
+import {createSignature} from "./lib/signatures";
 
 chai.use(chaiAsPromised);
 const {expect} = chai;
@@ -19,23 +20,6 @@ describe('CarbonX BasicTests', () => {
         governance: SignerWithAddress,
         backend: SignerWithAddress
     ;
-
-    const createSignature = async (
-        to: string,
-        tokenId: BigNumberish,
-        amount: BigNumberish,
-        hash: string,
-        signerAccount: Signer = backend,
-    ) => {
-        let message = '';
-        
-        if(hash == '') {
-            message = await token["createMessage(address,uint256,uint256)"](to, tokenId, amount)
-        } else {
-            message = await token["createMessage(address,uint256,uint256,string)"](to, tokenId, amount, hash)
-        }
-        return await signerAccount.signMessage(ethers.utils.arrayify(message));
-    };
 
     beforeEach(async () => {
         [axel, ben, chantal, governance, backend] = await ethers.getSigners();
@@ -61,7 +45,7 @@ describe('CarbonX BasicTests', () => {
             chantalAsMinter: CarbonX;
 
         beforeEach(async () => {
-            sigForAxel = await createSignature(axel.address, tokenId, amount, hash, backend);
+            sigForAxel = await createSignature(token, axel.address, tokenId, amount, hash, backend);
             axelAsMinter = token.connect(axel);
             chantalAsMinter = token.connect(chantal);
         })
@@ -97,7 +81,7 @@ describe('CarbonX BasicTests', () => {
 
             await axelAsMinter.create(axel.address, tokenId, amount, maxSupply, hash, sigForAxel);
 
-            const sigForBen = await createSignature(ben.address, tokenId, maxSupply, '', backend);
+            const sigForBen = await createSignature(token, ben.address, tokenId, maxSupply, '', backend);
             await expect(axelAsMinter.mintTo(ben.address, tokenId, maxSupply, sigForBen)).to.be.revertedWith('reverted');
         });
 
@@ -109,7 +93,7 @@ describe('CarbonX BasicTests', () => {
 
             await axelAsMinter.create(axel.address, tokenId, amount, maxSupply, hash, sigForAxel);
 
-            const sigForBen = await createSignature(ben.address, tokenId, 5, '', backend);
+            const sigForBen = await createSignature(token, ben.address, tokenId, 5, '', backend);
             await axelAsMinter.mintTo(ben.address, tokenId, 5, sigForBen);
 
             const balanceAxel = await token.balanceOf(axel.address, tokenId);
@@ -123,7 +107,7 @@ describe('CarbonX BasicTests', () => {
         });
 
         it('minting of un-created token will be reverted', async () => {
-            const sigForBen = await createSignature(ben.address, tokenId, 5, '', backend);
+            const sigForBen = await createSignature(token, ben.address, tokenId, 5, '', backend);
             await expect(axelAsMinter.mintTo(ben.address, tokenId, 5, sigForBen)).to.be.revertedWith('reverted');
         });
         
