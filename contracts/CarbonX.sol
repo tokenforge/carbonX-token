@@ -10,13 +10,15 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
 import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
+import "./ICarbonX.sol";
 
-contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable {
+contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable, ICarbonX {
     using ECDSA for bytes32;
 
     address private _signer;
 
     mapping(uint256 => string) private _tokenUris;
+    mapping(uint256 => uint256) private _maxTokenSupplies;
 
     event SignerChanged(address indexed oldSigner, address indexed _signer);
 
@@ -78,18 +80,28 @@ contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable {
         address to,
         uint256 tokenId,
         uint256 amount,
+        uint256 maxSupply,
         string memory tokenUri,
         bytes memory signature
     ) public {
+        if (exists(tokenId)) {
+            revert("Token already exists, use mint instead");
+        }
+
         bytes32 message = createMessage(to, tokenId, amount, tokenUri).toEthSignedMessageHash();
 
         // verifies that the sha3(account, nonce, address(this)) has been signed by _allowancesSigner
         if (message.recover(signature) != signer()) {
             revert("Either signature is wrong or parameters have been corrupted");
         }
+        if (amount > maxSupply) {
+            revert("Initial supply greater than max supply");
+        }
 
         bytes memory data;
         _mint(to, tokenId, amount, data);
+
+        _maxTokenSupplies[tokenId] = maxSupply;
 
         if (bytes(tokenUri).length > 0) {
             _setTokenUri(tokenId, tokenUri);
@@ -111,6 +123,10 @@ contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable {
         // verifies that the sha3(account, nonce, address(this)) has been signed by _allowancesSigner
         if (message.recover(signature) != signer()) {
             revert("Either signature is wrong or parameters have been corrupted");
+        }
+
+        if (amount + totalSupply(tokenId) > _maxTokenSupplies[tokenId]) {
+            revert("Mint would violate max token supply");
         }
 
         bytes memory data;
@@ -171,5 +187,14 @@ contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable {
     function withdraw() external onlyOwner {
         uint256 balance = address(this).balance;
         payable(msg.sender).transfer(balance);
+    }
+    
+    function onSentToVault(
+        address operator,
+        address from,
+        uint256 tokenId,
+        uint256 amount,
+        bytes memory data
+    ) override public  {
     }
 }
