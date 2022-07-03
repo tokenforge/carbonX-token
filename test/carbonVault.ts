@@ -13,6 +13,7 @@ import {
     CarbonX,
     CarbonX__factory
 } from "../typechain";
+import {createSignature} from "./lib/signatures";
 
 chai.use(chaiAsPromised);
 const {expect} = chai;
@@ -28,23 +29,6 @@ describe('CarbonX Vault Tests', () => {
         governance: SignerWithAddress,
         backend: SignerWithAddress
     ;
-
-    const createSignature = async (
-        to: string,
-        tokenId: BigNumberish,
-        amount: BigNumberish,
-        hash: string,
-        signerAccount: Signer = backend,
-    ) => {
-        let message = '';
-        
-        if(hash == '') {
-            message = await token["createMessage(address,uint256,uint256)"](to, tokenId, amount)
-        } else {
-            message = await token["createMessage(address,uint256,uint256,string)"](to, tokenId, amount, hash)
-        }
-        return await signerAccount.signMessage(ethers.utils.arrayify(message));
-    };
 
     beforeEach(async () => {
         [axel, ben, chantal, governance, backend] = await ethers.getSigners();
@@ -84,7 +68,7 @@ describe('CarbonX Vault Tests', () => {
             chantalAsMinter: CarbonX;
 
         beforeEach(async () => {
-            sigForAxel = await createSignature(axel.address, tokenId, amount, hash, backend);
+            sigForAxel = await createSignature(token, axel.address, tokenId, amount, hash, backend);
             
             axelAsMinter = token.connect(axel);
             axelAsSigner = token.connect(axel)
