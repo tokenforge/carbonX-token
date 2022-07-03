@@ -13,6 +13,9 @@ import "./ICarbonReceipt.sol";
 contract CarbonReceipt20 is ICarbonReceipt, ERC20PresetMinterPauser {
     constructor(string memory name, string memory symbol) ERC20PresetMinterPauser(name, symbol) {}
 
+    /*
+     * @dev mints receipt token (only available for MINTER_ROLE)
+     */
     function mintReceipt(
         address to,
         uint256, /*tokenId*/
@@ -22,6 +25,9 @@ contract CarbonReceipt20 is ICarbonReceipt, ERC20PresetMinterPauser {
         mint(to, amount * (10**this.decimals()));
     }
 
+    /*
+     * @dev mints receipts as batch (only available for MINTER_ROLE)
+     */
     function batchMintReceipt(
         address to,
         uint256[] memory tokenIds,
