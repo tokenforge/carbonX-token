@@ -188,13 +188,12 @@ contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable, ICarbonX {
         uint256 balance = address(this).balance;
         payable(msg.sender).transfer(balance);
     }
-    
+
     function onSentToVault(
         address operator,
         address from,
         uint256 tokenId,
         uint256 amount,
         bytes memory data
-    ) override public  {
-    }
+    ) public override {}
 }

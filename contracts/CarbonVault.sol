@@ -19,7 +19,7 @@ contract CarbonVault is ERC165, ERC1155Receiver, Ownable {
 
     mapping(uint256 => string) private _tokenUris;
     CarbonReceipt private _receiptToken;
-    
+
     mapping(address => bool) private _supportedTokens;
 
     event SignerChanged(address indexed oldSigner, address indexed _signer);
@@ -33,7 +33,7 @@ contract CarbonVault is ERC165, ERC1155Receiver, Ownable {
         _receiptToken = receiptToken_;
         addSupportedToken(supportedToken);
     }
-    
+
     function addSupportedToken(ICarbonX supportedToken) public onlyOwner {
         _supportedTokens[address(supportedToken)] = true;
     }
@@ -41,7 +41,7 @@ contract CarbonVault is ERC165, ERC1155Receiver, Ownable {
     function removeSupportedToken(ICarbonX supportedToken) public onlyOwner {
         _supportedTokens[address(supportedToken)] = false;
     }
-    
+
     function tokenIsSupported(address token) public view returns (bool) {
         return _supportedTokens[token];
     }
@@ -49,10 +49,14 @@ contract CarbonVault is ERC165, ERC1155Receiver, Ownable {
     /**
      * @dev See {IERC165-supportsInterface}.
      */
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165, ERC1155Receiver) returns (bool) {
-        return
-        interfaceId == type(ERC1155Receiver).interfaceId ||
-        super.supportsInterface(interfaceId);
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(ERC165, ERC1155Receiver)
+        returns (bool)
+    {
+        return interfaceId == type(ERC1155Receiver).interfaceId || super.supportsInterface(interfaceId);
     }
 
     function onERC1155Received(
@@ -63,10 +67,10 @@ contract CarbonVault is ERC165, ERC1155Receiver, Ownable {
         bytes memory data
     ) public virtual override returns (bytes4) {
         require(tokenIsSupported(_msgSender()), "Token is not supported");
-        
+
         _receiptToken.mint(from, amount * (10**18));
         ICarbonX(_msgSender()).onSentToVault(operator, from, tokenId, amount, data);
-        
+
         return this.onERC1155Received.selector;
     }
 
