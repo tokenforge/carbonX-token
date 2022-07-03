@@ -6,8 +6,8 @@ import {SignerWithAddress} from '@nomiclabs/hardhat-ethers/signers';
 
 import {BigNumber, BigNumberish, Signer} from "ethers";
 import {
-    CarbonReceipt,
-    CarbonReceipt__factory,
+    CarbonReceipt20,
+    CarbonReceipt20__factory,
     CarbonVault,
     CarbonVault__factory,
     CarbonX,
@@ -20,7 +20,7 @@ const {expect} = chai;
 
 describe('CarbonX Vault Tests', () => {
     let token: CarbonX,
-        receipt: CarbonReceipt,
+        receipt: CarbonReceipt20,
         vault: CarbonVault,
         axel: SignerWithAddress,
         ben: SignerWithAddress,
@@ -54,8 +54,8 @@ describe('CarbonX Vault Tests', () => {
         await token.deployed();
         expect(token.address).to.properAddress;
 
-        const carbonReceiptFactory = (await ethers.getContractFactory('CarbonReceipt', governance)) as CarbonReceipt__factory;
-        receipt = await carbonReceiptFactory.deploy();
+        const carbonReceiptFactory = (await ethers.getContractFactory('CarbonReceipt20', governance)) as CarbonReceipt20__factory;
+        receipt = await carbonReceiptFactory.deploy('CarbonFarming1', 'CF1');
         await receipt.deployed();
 
         const vaultFactory = (await ethers.getContractFactory('CarbonVault', governance)) as CarbonVault__factory;
@@ -66,10 +66,8 @@ describe('CarbonX Vault Tests', () => {
         // Vault becomes MinterRole in Receipt Token
         await receipt.grantRole(await receipt.MINTER_ROLE(), vault.address);
         
-        console.log(await receipt.MINTER_ROLE());
-
+        console.log("Axel: ", axel.address)
         expect(vault.address).to.properAddress;
-        
     });
 
     // 4
