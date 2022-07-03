@@ -60,7 +60,7 @@ describe('CarbonX Vault Tests', () => {
 
         const vaultFactory = (await ethers.getContractFactory('CarbonVault', governance)) as CarbonVault__factory;
 
-        vault = await vaultFactory.deploy(receipt.address, 'ipfs://');
+        vault = await vaultFactory.deploy(receipt.address, token.address, 'ipfs://');
         await vault.deployed();
         
         await receipt.grantRole(await receipt.MINTER_ROLE(), vault.address);
@@ -76,6 +76,7 @@ describe('CarbonX Vault Tests', () => {
         const 
             tokenId = 1001,
             amount = 250,
+            maxSupply = 1000,
             hash = 'NgcFOAfYXwVrmQrUOyB0U5kWU4w1a8Gf2gPPTPBrGTqTl-6qe7ERStbEMamFV4niv1bhFKI5167vzMLApLOEBs0ArvvUiClrRAFb=w600';
 
         let sigForAxel: string,
@@ -92,7 +93,7 @@ describe('CarbonX Vault Tests', () => {
             const totalSupplyBefore = await vault.totalSupply(tokenId);
             expect(totalSupplyBefore).to.eq(0);
 
-            await axelAsMinter.create(axel.address, tokenId, amount, hash, sigForAxel);
+            await axelAsMinter.create(axel.address, tokenId, amount, maxSupply, hash, sigForAxel);
             
             expect(await token.totalSupply(tokenId)).to.eq(amount);
             
