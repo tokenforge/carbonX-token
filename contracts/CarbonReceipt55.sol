@@ -66,5 +66,4 @@ contract CarbonReceipt55 is ICarbonReceipt, ERC1155Burnable, ERC1155Supply {
     ) internal virtual override(ERC1155, ERC1155Supply) {
         super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
     }
-    
 }
