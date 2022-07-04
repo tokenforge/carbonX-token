@@ -14,6 +14,7 @@ import {
     CarbonX__factory
 } from "../typechain";
 import {createSignature} from "./lib/signatures";
+import {createContracts} from "./lib/factory";
 
 chai.use(chaiAsPromised);
 const {expect} = chai;
@@ -33,22 +34,19 @@ describe('CarbonX Vault Tests', () => {
     beforeEach(async () => {
         [axel, ben, chantal, governance, backend] = await ethers.getSigners();
 
-        const tokenFactory = (await ethers.getContractFactory('CarbonX', governance)) as CarbonX__factory;
-        token = await tokenFactory.deploy(backend.address, 'ipfs://');
-        await token.deployed();
+        const created = await createContracts<CarbonReceipt20, CarbonReceipt20__factory>(
+            governance, 
+            backend, 
+            'CarbonReceipt20', 
+            ['AAA', 'A2']
+            );
+        
+        token = created.token;
+        receipt = created.receipt;
+        vault = created.vault;
+        
         expect(token.address).to.properAddress;
 
-        const carbonReceiptFactory = (await ethers.getContractFactory('CarbonReceipt20', governance)) as CarbonReceipt20__factory;
-        receipt = await carbonReceiptFactory.deploy('CarbonFarming1', 'CF1');
-        await receipt.deployed();
-
-        const vaultFactory = (await ethers.getContractFactory('CarbonVault', governance)) as CarbonVault__factory;
-
-        vault = await vaultFactory.deploy(receipt.address, token.address);
-        await vault.deployed();
-        
-        // Vault becomes MinterRole in Receipt Token
-        await receipt.grantRole(await receipt.MINTER_ROLE(), vault.address);
         
         console.log("Axel: ", axel.address)
         expect(vault.address).to.properAddress;
