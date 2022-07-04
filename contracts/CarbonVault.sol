@@ -5,9 +5,12 @@
 pragma solidity >=0.8.3;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+
+import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+
 import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Receiver.sol";
 
 import "./ICarbonReceipt.sol";
@@ -16,13 +19,19 @@ import "./ICarbonX.sol";
 
 contract CarbonVault is ERC165, ERC1155Receiver, Ownable {
     using ECDSA for bytes32;
+    using Counters for Counters.Counter;
 
+    event CarbonDeposited(uint256 indexed tokenId, uint256 amount, address indexed from,
+        address tokenAddress, uint256 originalTokenId);
+    
+    event TransferSingle(address indexed operator, address indexed from, address indexed to, uint256 id, uint256 value);
+
+    Counters.Counter private _tokenIds;
+    
     mapping(uint256 => string) private _tokenUris;
     ICarbonReceipt private _receiptToken;
 
     mapping(address => bool) private _supportedTokens;
-
-    event SignerChanged(address indexed oldSigner, address indexed _signer);
 
     constructor(ICarbonReceipt receiptToken_, ICarbonX supportedToken) {
         _receiptToken = receiptToken_;
@@ -63,6 +72,10 @@ contract CarbonVault is ERC165, ERC1155Receiver, Ownable {
     ) public virtual override returns (bytes4) {
         require(tokenIsSupported(_msgSender()), "Token is not supported");
 
+        uint256 originalTokenId = tokenId;
+        _tokenIds.increment();
+        
+        uint256 receiptTokenId = _tokenIds.current();
         uint256[] memory tokenIds = _asSingletonArray(tokenId);
         uint256[] memory amounts = _asSingletonArray(amount);
 
@@ -79,6 +92,8 @@ contract CarbonVault is ERC165, ERC1155Receiver, Ownable {
         }
 
         _receiptToken.mintReceipt(from, tokenId, amount, data);
+        
+        emit CarbonDeposited(tokenId, amount, from, _msgSender(), originalTokenId);
 
         try
             ICarbonX(_msgSender()).onTransferIntoVaultSuccessfullyDone(operator, from, tokenIds, amounts, data)
@@ -139,4 +154,8 @@ contract CarbonVault is ERC165, ERC1155Receiver, Ownable {
 
         return array;
     }
+    
+    function currentReceiptTokenId() external view returns (uint256) {
+        return _tokenIds.current();
+    } 
 }
