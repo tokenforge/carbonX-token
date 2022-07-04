@@ -19,7 +19,13 @@ contract CarbonReceipt55 is Context, AccessControlEnumerable, ICarbonReceipt, ER
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
-    constructor(string memory baseUri_) ERC1155(baseUri_) {
+    string private _name;
+    string private _symbol;
+    
+    constructor(string memory name_, string memory symbol_) ERC1155("") {
+        _name = name_;
+        _symbol = symbol_;
+        
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
 
         _setupRole(MINTER_ROLE, _msgSender());
