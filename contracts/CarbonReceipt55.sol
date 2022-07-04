@@ -6,6 +6,8 @@ pragma solidity >=0.8.3;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
+import "@openzeppelin/contracts/utils/Context.sol";
 
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
@@ -13,15 +15,26 @@ import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 
 import "./ICarbonReceipt.sol";
 
-contract CarbonReceipt55 is ICarbonReceipt, ERC1155Burnable, ERC1155Supply {
-    constructor(string memory baseUri_) ERC1155(baseUri_) {}
+contract CarbonReceipt55 is Context, AccessControlEnumerable, ICarbonReceipt, ERC1155Burnable, ERC1155Supply {
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+
+    constructor(string memory baseUri_) ERC1155(baseUri_) {
+        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
+
+        _setupRole(MINTER_ROLE, _msgSender());
+        _setupRole(PAUSER_ROLE, _msgSender());
+    }
 
     function mintReceipt(
         address to,
         uint256 tokenId,
         uint256 amount,
+        uint256 originalTokenId,
         bytes memory data
     ) public override {
+        require(hasRole(MINTER_ROLE, _msgSender()), "CarbonReceipt55: must have minter role to mint");
+
         super._mint(to, tokenId, amount, data);
     }
 
@@ -29,8 +42,11 @@ contract CarbonReceipt55 is ICarbonReceipt, ERC1155Burnable, ERC1155Supply {
         address to,
         uint256[] memory tokenIds,
         uint256[] memory amounts,
+        uint256[] memory originalTokenIds,
         bytes memory data
     ) public override {
+        require(hasRole(MINTER_ROLE, _msgSender()), "CarbonReceipt55: must have minter role to mint");
+
         for (uint256 i = 0; i < tokenIds.length; i++) {
             super._mint(to, tokenIds[i], amounts[i], data);
         }
@@ -65,5 +81,21 @@ contract CarbonReceipt55 is ICarbonReceipt, ERC1155Burnable, ERC1155Supply {
         bytes memory data
     ) internal virtual override(ERC1155, ERC1155Supply) {
         super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
+    }
+
+    /**
+     * @dev See {IERC165-supportsInterface}.
+     */
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(AccessControlEnumerable, ERC1155)
+        returns (bool)
+    {
+        return
+            interfaceId == type(IERC1155).interfaceId ||
+            interfaceId == type(AccessControlEnumerable).interfaceId ||
+            super.supportsInterface(interfaceId);
     }
 }

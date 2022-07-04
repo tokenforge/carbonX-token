@@ -21,13 +21,18 @@ contract CarbonVault is ERC165, ERC1155Receiver, Ownable {
     using ECDSA for bytes32;
     using Counters for Counters.Counter;
 
-    event CarbonDeposited(uint256 indexed tokenId, uint256 amount, address indexed from,
-        address tokenAddress, uint256 originalTokenId);
-    
+    event CarbonDeposited(
+        uint256 indexed tokenId,
+        uint256 amount,
+        address indexed from,
+        address tokenAddress,
+        uint256 originalTokenId
+    );
+
     event TransferSingle(address indexed operator, address indexed from, address indexed to, uint256 id, uint256 value);
 
     Counters.Counter private _tokenIds;
-    
+
     mapping(uint256 => string) private _tokenUris;
     ICarbonReceipt private _receiptToken;
 
@@ -70,11 +75,12 @@ contract CarbonVault is ERC165, ERC1155Receiver, Ownable {
         uint256 amount,
         bytes memory data
     ) public virtual override returns (bytes4) {
-        require(tokenIsSupported(_msgSender()), "Token is not supported");
-
+        address originalToken = _msgSender();
         uint256 originalTokenId = tokenId;
         _tokenIds.increment();
-        
+
+        require(tokenIsSupported(originalToken), "Token is not supported");
+
         uint256 receiptTokenId = _tokenIds.current();
         uint256[] memory tokenIds = _asSingletonArray(tokenId);
         uint256[] memory amounts = _asSingletonArray(amount);
@@ -91,9 +97,9 @@ contract CarbonVault is ERC165, ERC1155Receiver, Ownable {
             revert("CarbonVault: transfer to not-compatible implementer");
         }
 
-        _receiptToken.mintReceipt(from, tokenId, amount, data);
-        
-        emit CarbonDeposited(tokenId, amount, from, _msgSender(), originalTokenId);
+        _receiptToken.mintReceipt(from, receiptTokenId, amount, originalTokenId, data);
+
+        emit CarbonDeposited(receiptTokenId, amount, from, _msgSender(), originalTokenId);
 
         try
             ICarbonX(_msgSender()).onTransferIntoVaultSuccessfullyDone(operator, from, tokenIds, amounts, data)
@@ -131,7 +137,8 @@ contract CarbonVault is ERC165, ERC1155Receiver, Ownable {
             revert("CarbonVault: transfer to not-compatible implementer");
         }
 
-        _receiptToken.batchMintReceipt(from, tokenIds, amounts, data);
+        // @TODO to be implemented
+        //_receiptToken.batchMintReceipt(from, tokenIds, amounts, data);
 
         try
             ICarbonX(_msgSender()).onTransferIntoVaultSuccessfullyDone(operator, from, tokenIds, amounts, data)
@@ -154,8 +161,8 @@ contract CarbonVault is ERC165, ERC1155Receiver, Ownable {
 
         return array;
     }
-    
+
     function currentReceiptTokenId() external view returns (uint256) {
         return _tokenIds.current();
-    } 
+    }
 }
