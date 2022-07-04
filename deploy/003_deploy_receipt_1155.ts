@@ -8,9 +8,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deployer} = await getNamedAccounts();
     console.log("Deployer", deployer)
 
-    const instance = await deploy('CarbonReceipt', {
+    const instance = await deploy('CarbonReceipt55', {
         from: deployer,
-        args: [],
+        args: ['ipfs://'],
         log: true,
         autoMine: true, // speed up deployment on local network (ganache, hardhat), no effect on live networks
     });
@@ -24,4 +24,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
 };
 export default func;
-func.dependencies = ['CarbonReceipt'];
+func.dependencies = ['CarbonReceipt55'];

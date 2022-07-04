@@ -8,12 +8,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deployer} = await getNamedAccounts();
     console.log("Deployer", deployer)
 
-    const carbonReceiptToken = await deployments.get('CarbonReceipt');
+    const carbonX = await deployments.get('CarbonX');
+    
+    const carbonReceiptToken = await deployments.get('CarbonReceipt55');
     console.log("Using CarbonReceipt: " + carbonReceiptToken.address);
     
     const instance = await deploy('CarbonVault', {
         from: deployer,
-        args: [carbonReceiptToken.address, 'ipfs://'],
+        args: [carbonReceiptToken.address, carbonX.address],
         log: true,
         autoMine: true, // speed up deployment on local network (ganache, hardhat), no effect on live networks
     });
@@ -26,7 +28,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     log("Ready.");
 
     const minterRole = '0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6'; 
-    await execute('CarbonReceipt', {from: deployer, log: true}, 'grantRole', minterRole, instance.address);
+    await execute('CarbonReceipt55', {from: deployer, log: true}, 'grantRole', minterRole, instance.address);
     
 };
 export default func;
