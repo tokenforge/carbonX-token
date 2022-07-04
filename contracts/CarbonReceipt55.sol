@@ -30,7 +30,7 @@ contract CarbonReceipt55 is Context, AccessControlEnumerable, ICarbonReceipt, ER
         address to,
         uint256 tokenId,
         uint256 amount,
-        uint256 originalTokenId,
+        uint256, /*originalTokenId*/
         bytes memory data
     ) public override {
         require(hasRole(MINTER_ROLE, _msgSender()), "CarbonReceipt55: must have minter role to mint");
@@ -42,7 +42,7 @@ contract CarbonReceipt55 is Context, AccessControlEnumerable, ICarbonReceipt, ER
         address to,
         uint256[] memory tokenIds,
         uint256[] memory amounts,
-        uint256[] memory originalTokenIds,
+        uint256[] memory, /*originalTokenIds*/
         bytes memory data
     ) public override {
         require(hasRole(MINTER_ROLE, _msgSender()), "CarbonReceipt55: must have minter role to mint");
