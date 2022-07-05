@@ -31,22 +31,16 @@ describe('CarbonX Vault 1155 Tests', () => {
     beforeEach(async () => {
         [axel, ben, chantal, governance, backend] = await ethers.getSigners();
 
-        console.log("X1")
         try {
             const created = await createContracts<CarbonReceipt55, CarbonReceipt55__factory>(
                 governance, backend, 'CarbonReceipt55', ['test']);
 
-            console.log("X2")
             token = created.token;
             receipt = created.receipt;
             vault = created.vault;
 
-            console.log("X3")
-
             expect(token.address).to.properAddress;
-
-
-            console.log("Axel: ", axel.address)
+            expect(receipt.address).to.properAddress;
             expect(vault.address).to.properAddress;
         }
         catch(e) {
@@ -81,32 +75,51 @@ describe('CarbonX Vault 1155 Tests', () => {
         it('Axel gets token and stakes them into Vault', async () => {
             expect(await token.totalSupply(tokenId)).to.eq(amount);
             
-            await axelAsSigner.safeTransferFrom(axel.address, vault.address, tokenId, amount, '0x')
+            const currentReceiptTokenIdBefore = (await vault.currentReceiptTokenId()).toNumber();
+            
+            await expect(axelAsSigner.safeTransferFrom(axel.address, vault.address, tokenId, amount, '0x'))
+
+                // Event on CarbonX
+                .to.emit(axelAsSigner, 'TransferSingle')
+                .withArgs(axel.address, axel.address, vault.address, tokenId, amount)
+
+                // Event on Vault
+                .to.emit(vault, 'CarbonDeposited')
+                .withArgs(currentReceiptTokenIdBefore + 1, amount, axel.address, token.address, tokenId)
+
+                // Event on Vault for minting receipt token
+            
+                .to.emit(receipt, 'TransferSingle')
+                .withArgs(vault.address, ethers.constants.AddressZero, axel.address, currentReceiptTokenIdBefore+1, amount)
+
+            ;
 
             expect(await token.totalSupply(tokenId)).to.eq(amount);
             expect(await token.balanceOf(axel.address, tokenId)).to.eq(0);
             expect(await token.balanceOf(vault.address, tokenId)).to.eq( amount );
             
             // Axel got $amount receipt token:
-            const tokenBits = BigNumber.from(10).pow(18);
-            const amountReceipt = BigNumber.from(amount).mul(tokenBits);
-            expect(await receipt.balanceOf(axel.address, tokenId)).to.eq(amountReceipt);
+            const currentReceiptTokenId = await vault.currentReceiptTokenId();
+            expect(await receipt.balanceOf(axel.address, currentReceiptTokenId)).to.eq(amount);
+            
+            expect(await receipt.receiptDataCount(currentReceiptTokenId)).to.eq(1);
+
+            const receiptData = await receipt.receiptData(currentReceiptTokenId, 0);
+            expect(receiptData.originalTokenId).eq(tokenId);
         });
         
         it('we can NOT take out any tokens from vault', async () => {
+            // vault has no tokens
+            expect(await token.balanceOf(vault.address, tokenId)).to.eq( 0 );
+
             // some one stakes its token into vault
             await axelAsSigner.safeTransferFrom(axel.address, vault.address, tokenId, amount, '0x')
             
             // vault has $amount tokens
             expect(await token.balanceOf(vault.address, tokenId)).to.eq( amount );
             
-            // we ensure that $governance is Owner ot $token
+            // we ensure that $governance is Owner ot $vault
             expect(await vault.owner()).eq(governance.address) 
-            
-            // and expect to fail when $governance wants to take out tokens out of vault
-        //    const caller = vault.connect(governance);
-            //await vault.setApprovalForAll(governance.address, true);
-            //expect(await caller.safeTransferFrom(vault.address, ben.address, tokenId, amount, '0x'));
         })
         
     });
