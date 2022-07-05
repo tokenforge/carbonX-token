@@ -28,6 +28,8 @@ contract CarbonVault is ERC165, ERC1155Receiver, Ownable {
         address tokenAddress,
         uint256 originalTokenId
     );
+    
+    event ReceiptTokenChanged(address indexed operator, address indexed oldToken, address indexed newToken);
 
     event TransferSingle(address indexed operator, address indexed from, address indexed to, uint256 id, uint256 value);
 
@@ -55,6 +57,19 @@ contract CarbonVault is ERC165, ERC1155Receiver, Ownable {
         return _supportedTokens[token];
     }
 
+    function currentReceiptTokenId() external view returns (uint256) {
+        return _tokenIds.current();
+    }
+    
+    function changeReceiptToken(ICarbonReceipt receiptToken_) public onlyOwner {
+        require(_receiptToken != receiptToken_, "New token must have another address");
+        
+        address oldToken = address(_receiptToken);
+        _receiptToken = receiptToken_;
+        
+        emit ReceiptTokenChanged(_msgSender(), oldToken, address(receiptToken_) );
+    }
+
     /**
      * @dev See {IERC165-supportsInterface}.
      */
@@ -77,11 +92,13 @@ contract CarbonVault is ERC165, ERC1155Receiver, Ownable {
     ) public virtual override returns (bytes4) {
         address originalToken = _msgSender();
         uint256 originalTokenId = tokenId;
-        _tokenIds.increment();
-
+        
         require(tokenIsSupported(originalToken), "Token is not supported");
 
+        _tokenIds.increment();
+        
         uint256 receiptTokenId = _tokenIds.current();
+        
         uint256[] memory tokenIds = _asSingletonArray(tokenId);
         uint256[] memory amounts = _asSingletonArray(amount);
 
@@ -162,7 +179,4 @@ contract CarbonVault is ERC165, ERC1155Receiver, Ownable {
         return array;
     }
 
-    function currentReceiptTokenId() external view returns (uint256) {
-        return _tokenIds.current();
-    }
 }

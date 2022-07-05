@@ -15,12 +15,25 @@ import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 
 import "./ICarbonReceipt.sol";
 
+
 contract CarbonReceipt55 is Context, AccessControlEnumerable, ICarbonReceipt, ERC1155Burnable, ERC1155Supply {
+
+    struct ReceiptData {
+        uint256 originalTokenId;
+        uint256 amount;
+        uint256 blockNumber;
+        uint256 blockTime;        
+    }
+    
+    
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
     string private _name;
     string private _symbol;
+
+    mapping(uint256 => ReceiptData[]) _receipts;
+    
     
     constructor(string memory name_, string memory symbol_) ERC1155("") {
         _name = name_;
@@ -31,30 +44,45 @@ contract CarbonReceipt55 is Context, AccessControlEnumerable, ICarbonReceipt, ER
         _setupRole(MINTER_ROLE, _msgSender());
         _setupRole(PAUSER_ROLE, _msgSender());
     }
+    
+    function receiptDataCount(uint256 tokenId) external view returns (uint256) {
+        return _receipts[tokenId].length;
+    }
+
+    function receiptData(uint256 tokenId, uint256 index) external view returns (ReceiptData memory) {
+        require(index < _receipts[tokenId].length, "Index out of Bounds");
+        return _receipts[tokenId][index];
+    }
 
     function mintReceipt(
         address to,
         uint256 tokenId,
         uint256 amount,
-        uint256, /*originalTokenId*/
+        uint256 originalTokenId,
         bytes memory data
     ) public override {
         require(hasRole(MINTER_ROLE, _msgSender()), "CarbonReceipt55: must have minter role to mint");
 
         super._mint(to, tokenId, amount, data);
+
+        ReceiptData memory receipt = ReceiptData(originalTokenId, amount, block.number, block.timestamp);
+        _receipts[tokenId].push(receipt);
     }
 
     function batchMintReceipt(
         address to,
         uint256[] memory tokenIds,
         uint256[] memory amounts,
-        uint256[] memory, /*originalTokenIds*/
+        uint256[] memory originalTokenIds,
         bytes memory data
     ) public override {
         require(hasRole(MINTER_ROLE, _msgSender()), "CarbonReceipt55: must have minter role to mint");
 
         for (uint256 i = 0; i < tokenIds.length; i++) {
             super._mint(to, tokenIds[i], amounts[i], data);
+
+            ReceiptData memory receipt = ReceiptData(originalTokenIds[i], amounts[i], block.number, block.timestamp);
+            _receipts[tokenIds[i]].push(receipt);
         }
     }
 

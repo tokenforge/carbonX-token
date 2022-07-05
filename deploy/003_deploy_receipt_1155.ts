@@ -10,7 +10,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     const instance = await deploy('CarbonReceipt55', {
         from: deployer,
-        args: ['ipfs://'],
+        args: ['CarbonReceipt', 'CR1'],
         log: true,
         autoMine: true, // speed up deployment on local network (ganache, hardhat), no effect on live networks
     });
