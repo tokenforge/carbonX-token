@@ -14,7 +14,6 @@ import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 import "./ICarbonX.sol";
 
 interface CarbonXErrors {
-    
     /// Signer must not be zero-address
     error ErrSignerMustNotBeZeroAddress();
 
@@ -25,19 +24,19 @@ interface CarbonXErrors {
     /// Token `tokenId` already exists, use mint instead
     /// @param tokenId the Token-Id
     error ErrTokenAlreadyExists(uint256 tokenId);
-    
+
     /// Either signature is wrong or parameters have been corrupted
     error ErrInvalidSignature();
-    
+
     /// Initial supply `amount` is greater than max-supply `maxSupply`
     /// @param tokenId the Token-Id
     /// @param amount The initial amount of token to create into beneficiaries wallet
     /// @param maxSupply the overall max supply for this particular token-id
     error ErrInitialSupplyGreaterThanNaxSupply(uint256 tokenId, uint256 amount, uint256 maxSupply);
-    
+
     // Minting would violate max token supply of `maxSupply`
     /// @param tokenId the Token-Id
-    /// @param newSupply the new max-supply that would be created 
+    /// @param newSupply the new max-supply that would be created
     /// @param maxSupply the overall max supply for this particular token-id
     error ErrMintWouldViolateMaxTokenSupply(uint256 tokenId, uint256 newSupply, uint256 maxSupply);
 }
@@ -57,7 +56,7 @@ contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable, ICarbonX, CarbonXEr
     mapping(uint256 => uint256) private _maxTokenSupplies;
 
     modifier tokenExists(uint256 tokenId) {
-        if(! exists(tokenId)) {
+        if (!exists(tokenId)) {
             revert ErrTokenNotExists(tokenId);
         }
         _;
@@ -81,7 +80,7 @@ contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable, ICarbonX, CarbonXEr
         if (signer_ == address(0)) {
             revert ErrSignerMustNotBeZeroAddress();
         }
-        
+
         if (signer_ == _signer) {
             return;
         }
@@ -125,7 +124,7 @@ contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable, ICarbonX, CarbonXEr
     }
 
     /// @dev Creates a new token with max supply, mints $amount into $to address
-    /// 
+    ///
     /// @param to Beneficiary of the initial token creation
     /// @param tokenId the token-Id
     /// @param amount The initial amount of token to create into beneficiaries wallet
@@ -184,12 +183,17 @@ contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable, ICarbonX, CarbonXEr
         }
 
         if (amount + totalSupply(tokenId) > _maxTokenSupplies[tokenId]) {
-            revert ErrMintWouldViolateMaxTokenSupply(tokenId, amount + totalSupply(tokenId), _maxTokenSupplies[tokenId]);
+            revert ErrMintWouldViolateMaxTokenSupply(
+                tokenId,
+                amount + totalSupply(tokenId),
+                _maxTokenSupplies[tokenId]
+            );
         }
 
         bytes memory data;
         _mint(to, tokenId, amount, data);
     }
+
     /// @dev Mints token into msg.sender for existing tokenId to a specific beneficiary
     /// maximum supply may not exceed maxTokenSupplies[tokenId]
     ///
