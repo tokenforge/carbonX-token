@@ -16,15 +16,21 @@ import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 
 import "./ICarbonReceipt.sol";
 
-contract CarbonReceipt55 is Context, AccessControlEnumerable, ReentrancyGuard, ICarbonReceipt, ERC1155Burnable, ERC1155Supply {
-
+contract CarbonReceipt55 is
+    Context,
+    AccessControlEnumerable,
+    ReentrancyGuard,
+    ICarbonReceipt,
+    ERC1155Burnable,
+    ERC1155Supply
+{
     struct ReceiptData {
         uint256 originalTokenId;
         uint256 amount;
         uint256 blockNumber;
-        uint256 blockTime;        
+        uint256 blockTime;
     }
-    
+
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
@@ -32,22 +38,22 @@ contract CarbonReceipt55 is Context, AccessControlEnumerable, ReentrancyGuard, I
     string private _symbol;
 
     mapping(uint256 => ReceiptData[]) _receipts;
-    
+
     modifier onlyMinter() {
         require(hasRole(MINTER_ROLE, _msgSender()), "CarbonReceipt55: must have minter role to mint");
         _;
     }
-    
+
     constructor(string memory name_, string memory symbol_) ERC1155("") {
         _name = name_;
         _symbol = symbol_;
-        
+
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
 
         _setupRole(MINTER_ROLE, _msgSender());
         _setupRole(PAUSER_ROLE, _msgSender());
     }
-    
+
     function receiptDataCount(uint256 tokenId) external view returns (uint256) {
         return _receipts[tokenId].length;
     }
@@ -77,7 +83,6 @@ contract CarbonReceipt55 is Context, AccessControlEnumerable, ReentrancyGuard, I
         uint256[] memory originalTokenIds,
         bytes memory data
     ) public override onlyMinter nonReentrant {
-
         for (uint256 i = 0; i < tokenIds.length; i++) {
             ReceiptData memory receipt = ReceiptData(originalTokenIds[i], amounts[i], block.number, block.timestamp);
             _receipts[tokenIds[i]].push(receipt);
