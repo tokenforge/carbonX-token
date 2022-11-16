@@ -28,7 +28,7 @@ contract CarbonVault is ERC165, ERC1155Receiver, Ownable {
         address tokenAddress,
         uint256 originalTokenId
     );
-    
+
     event ReceiptTokenChanged(address indexed operator, address indexed oldToken, address indexed newToken);
 
     event TransferSingle(address indexed operator, address indexed from, address indexed to, uint256 id, uint256 value);
@@ -59,14 +59,14 @@ contract CarbonVault is ERC165, ERC1155Receiver, Ownable {
     function currentReceiptTokenId() external view returns (uint256) {
         return _tokenIds.current();
     }
-    
+
     function changeReceiptToken(ICarbonReceipt receiptToken_) public onlyOwner {
         require(_receiptToken != receiptToken_, "New token must have another address");
-        
+
         address oldToken = address(_receiptToken);
         _receiptToken = receiptToken_;
-        
-        emit ReceiptTokenChanged(_msgSender(), oldToken, address(receiptToken_) );
+
+        emit ReceiptTokenChanged(_msgSender(), oldToken, address(receiptToken_));
     }
 
     /**
@@ -91,13 +91,13 @@ contract CarbonVault is ERC165, ERC1155Receiver, Ownable {
     ) public virtual override returns (bytes4) {
         address originalToken = _msgSender();
         uint256 originalTokenId = tokenId;
-        
+
         require(tokenIsSupported(originalToken), "Token is not supported");
 
         _tokenIds.increment();
-        
+
         uint256 receiptTokenId = _tokenIds.current();
-        
+
         uint256[] memory tokenIds = _asSingletonArray(tokenId);
         uint256[] memory amounts = _asSingletonArray(amount);
 
@@ -154,7 +154,8 @@ contract CarbonVault is ERC165, ERC1155Receiver, Ownable {
         }
 
         // @TODO to be implemented
-        //_receiptToken.batchMintReceipt(from, tokenIds, amounts, data);
+        // _receiptToken.batchMintReceipt(from, tokenIds, amounts, data);
+        // like _receiptToken.mintReceipt(from, receiptTokenId, amount, originalTokenId, data);
 
         try
             ICarbonX(_msgSender()).onTransferIntoVaultSuccessfullyDone(operator, from, tokenIds, amounts, data)
@@ -177,5 +178,4 @@ contract CarbonVault is ERC165, ERC1155Receiver, Ownable {
 
         return array;
     }
-
 }
