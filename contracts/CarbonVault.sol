@@ -72,13 +72,9 @@ contract CarbonVault is ERC165, ERC1155Receiver, Ownable {
     /**
      * @dev See {IERC165-supportsInterface}.
      */
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        virtual
-        override(ERC165, ERC1155Receiver)
-        returns (bool)
-    {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view virtual override(ERC165, ERC1155Receiver) returns (bool) {
         return interfaceId == type(ERC1155Receiver).interfaceId || super.supportsInterface(interfaceId);
     }
 

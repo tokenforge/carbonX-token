@@ -49,8 +49,8 @@ contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable, ICarbonX, CarbonXEr
 
     // Event to emit when Signer will be changed
     event SignerChanged(address indexed oldSigner, address indexed _signer);
-    
-    // Event to emit when a TokenUri has been changed or initially set 
+
+    // Event to emit when a TokenUri has been changed or initially set
     event TokenUriChanged(uint256 indexed tokenId, bytes32 oldUriHash, bytes32 newUriHash);
 
     // Token-URIs
@@ -102,11 +102,7 @@ contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable, ICarbonX, CarbonXEr
     /// @param tokenId the token id
     /// @param amount the amount of tokens
     /// @return the message to sign
-    function createMessage(
-        address to,
-        uint256 tokenId,
-        uint256 amount
-    ) public view returns (bytes32) {
+    function createMessage(address to, uint256 tokenId, uint256 amount) public view returns (bytes32) {
         return keccak256(abi.encode(to, tokenId, amount, address(this)));
     }
 
@@ -150,7 +146,7 @@ contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable, ICarbonX, CarbonXEr
         bytes32 message;
 
         bytes memory tmpTokenUriBytes = bytes(tokenUri);
-        if(tmpTokenUriBytes.length > 0) {
+        if (tmpTokenUriBytes.length > 0) {
             message = createMessage(to, tokenId, amount, tokenUri).toEthSignedMessageHash();
         } else {
             message = createMessage(to, tokenId, amount).toEthSignedMessageHash();
@@ -180,12 +176,7 @@ contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable, ICarbonX, CarbonXEr
     /// @param to the beneficiary
     /// @param tokenId the token id
     /// @param amount the amount of tokens
-    function mintTo(
-        address to,
-        uint256 tokenId,
-        uint256 amount,
-        bytes memory signature
-    ) public tokenExists(tokenId) {
+    function mintTo(address to, uint256 tokenId, uint256 amount, bytes memory signature) public tokenExists(tokenId) {
         bytes32 message = createMessage(to, tokenId, amount).toEthSignedMessageHash();
 
         // verifies that the sha3(account, nonce, address(this)) has been signed by _allowancesSigner
@@ -210,11 +201,7 @@ contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable, ICarbonX, CarbonXEr
     ///
     /// @param tokenId the token id
     /// @param amount the amount of tokens
-    function mint(
-        uint256 tokenId,
-        uint256 amount,
-        bytes memory signature
-    ) external tokenExists(tokenId) {
+    function mint(uint256 tokenId, uint256 amount, bytes memory signature) external tokenExists(tokenId) {
         mintTo(msg.sender, tokenId, amount, signature);
     }
 
@@ -256,9 +243,9 @@ contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable, ICarbonX, CarbonXEr
     function setTokenUri(uint256 id, string memory tokenUri) external onlyOwner {
         bytes32 oldUriHash = keccak256(abi.encodePacked(_tokenUris[id]));
         bytes32 newUriHash = keccak256(abi.encodePacked(tokenUri));
-        
+
         _setTokenUri(id, tokenUri);
-        
+
         emit TokenUriChanged(id, oldUriHash, newUriHash);
     }
 

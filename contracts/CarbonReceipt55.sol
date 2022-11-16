@@ -125,13 +125,9 @@ contract CarbonReceipt55 is
     /**
      * @dev See {IERC165-supportsInterface}.
      */
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        virtual
-        override(AccessControlEnumerable, ERC1155)
-        returns (bool)
-    {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view virtual override(AccessControlEnumerable, ERC1155) returns (bool) {
         return
             interfaceId == type(IERC1155).interfaceId ||
             interfaceId == type(AccessControlEnumerable).interfaceId ||
