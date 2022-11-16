@@ -4,7 +4,7 @@ stages:
 
 contracts:
   stage: test
-  image: node:12
+  image: node:14
   script:
     - yarn install
     - yarn build
