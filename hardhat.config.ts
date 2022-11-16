@@ -1,7 +1,8 @@
 import { config as dotEnvConfig } from "dotenv";
+
+
 import "@nomicfoundation/hardhat-toolbox";
 import "hardhat-deploy";
-import "hardhat-deploy-tenderly";
 
 dotEnvConfig();
 
@@ -11,9 +12,6 @@ import "solidity-coverage";
 import "hardhat-gas-reporter";
 
 import {node_url, accounts, addForkConfiguration} from './utils/network';
-
-// TODO: reenable solidity-coverage when it works
-// import "solidity-coverage";
 
 const INFURA_API_KEY = process.env.INFURA_API_KEY || '';
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY || '';
@@ -100,12 +98,6 @@ const config: HardhatUserConfig = {
         cache: "./cache"
     },
 
-    /*gasReporter: {
-        currency: 'EUR',
-        gasPrice: 21,
-        coinmarketcap: process.env.COINMARKETCAP_APIKEY,
-    }*/
-
     typechain: {
         outDir: 'typechain',
         target: 'ethers-v5',
@@ -123,11 +115,6 @@ const config: HardhatUserConfig = {
             },
         }
         : undefined,
-
-    tenderly: {
-        project: 'template-ethereum-contracts',
-        username: process.env.TENDERLY_USERNAME as string,
-    },
 
 };
 
