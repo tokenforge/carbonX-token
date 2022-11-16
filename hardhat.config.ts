@@ -1,19 +1,14 @@
-import {config as dotEnvConfig} from 'dotenv';
-import 'hardhat-deploy';
-import 'hardhat-deploy-tenderly';
+import { config as dotEnvConfig } from "dotenv";
+import "@nomicfoundation/hardhat-toolbox";
+import "hardhat-deploy";
+import "hardhat-deploy-tenderly";
 
 dotEnvConfig();
 
-import {HardhatUserConfig} from 'hardhat/types';
+import { HardhatUserConfig } from "hardhat/types";
 
-import '@nomiclabs/hardhat-waffle';
-import '@typechain/hardhat';
-import '@nomiclabs/hardhat-etherscan';
-
-import 'solidity-coverage';
-import 'hardhat-gas-reporter';
-
-import {task} from 'hardhat/config';
+import "solidity-coverage";
+import "hardhat-gas-reporter";
 
 import {node_url, accounts, addForkConfiguration} from './utils/network';
 
@@ -25,22 +20,14 @@ const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY || '';
 
 const PRIVATE_KEY_MAINNET = process.env.PRIVATE_KEY_MAINNET || '';
 
-console.log("INFURA: ", INFURA_API_KEY)
-console.log(node_url('rinkeby'));
-
-const PRIVATE_KEY_RINKEBY =
-    process.env.PRIVATE_KEY_RINKEBY! ||
-    '0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3'; // well known private key
-
-
 const config: HardhatUserConfig = {
     defaultNetwork: 'hardhat',
     solidity: {
         compilers: [{
-            version: '0.8.4', settings: {
+            version: '0.8.6', settings: {
                 optimizer: {
                     enabled: true,
-                    runs: 1000,
+                    runs: 2000,
                 },
             }
         }],
