@@ -6,11 +6,17 @@ pragma solidity >=0.8.3;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
 import "./ICarbonReceipt.sol";
 
-contract CarbonReceipt20 is ICarbonReceipt, ERC20PresetMinterPauser {
+contract CarbonReceipt20 is ICarbonReceipt, ERC20PresetMinterPauser, ReentrancyGuard {
+    modifier onlyMinter() {
+        require(hasRole(MINTER_ROLE, _msgSender()), "CarbonReceipt55: must have minter role to mint");
+        _;
+    }
+
     constructor(string memory name, string memory symbol) ERC20PresetMinterPauser(name, symbol) {}
 
     /*
@@ -22,7 +28,7 @@ contract CarbonReceipt20 is ICarbonReceipt, ERC20PresetMinterPauser {
         uint256 amount,
         uint256, /*originalTokenId*/
         bytes memory /*data*/
-    ) public override {
+    ) public override onlyMinter nonReentrant {
         mint(to, amount * (10**this.decimals()));
     }
 
@@ -35,7 +41,7 @@ contract CarbonReceipt20 is ICarbonReceipt, ERC20PresetMinterPauser {
         uint256[] memory amounts,
         uint256[] memory, /*originalTokenId*/
         bytes memory /*data*/
-    ) public override {
+    ) public override onlyMinter nonReentrant {
         for (uint256 i = 0; i < tokenIds.length; i++) {
             mint(to, amounts[i]);
         }
