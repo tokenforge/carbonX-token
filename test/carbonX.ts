@@ -219,7 +219,28 @@ describe('CarbonX BasicTests', () => {
                         .to.be.revertedWithCustomError(token, 'ErrInvalidSignature');
                 });
 
+                it('let me mint my tokens with a signature', async () => {
+                    expect(balanceBefore).to.eq(0);
+
+                    const sigForBen = await createSignature(token, ben.address, tokenId, 10, '', backend);
+                    const benAsMinter = token.connect(ben);
+                    
+                    await expect(benAsMinter.mint(tokenId, 10, sigForBen))
+                        .to.emit(token, 'TransferSingle')
+                        .withArgs(ben.address, ethers.constants.AddressZero, ben.address, tokenId, 10);
+                });
+
             })
+
+            it('reverts when I try to mint not-existing tokens', async () => {
+                const sigForBen = await createSignature(token, ben.address, tokenId, 10, '', backend);
+                const benAsMinter = token.connect(ben);
+
+                await expect(benAsMinter.mint(tokenId + 123, 10, sigForBen))
+                    .to.be.revertedWithCustomError(token, 'ErrTokenNotExists')
+                    .withArgs(tokenId + 123)
+            });
+
 
         });
 
