@@ -211,7 +211,7 @@ contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable, ICarbonX {
         uint256[] memory,
         uint256[] memory,
         bytes memory
-    ) public virtual override returns (bool) {
+    ) public view virtual override returns (bool) {
         return true;
     }
 
