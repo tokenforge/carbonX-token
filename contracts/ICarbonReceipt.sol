@@ -2,7 +2,7 @@
 // (C) by TokenForge GmbH, Berlin
 // Author: Hagen Hübel, hagen@token-forge.io
 
-pragma solidity >=0.8.3;
+pragma solidity 0.8.6;
 
 interface ICarbonReceipt {
     function mintReceipt(
