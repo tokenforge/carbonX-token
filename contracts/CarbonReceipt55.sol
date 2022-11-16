@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
@@ -15,8 +16,7 @@ import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 
 import "./ICarbonReceipt.sol";
 
-
-contract CarbonReceipt55 is Context, AccessControlEnumerable, ICarbonReceipt, ERC1155Burnable, ERC1155Supply {
+contract CarbonReceipt55 is Context, AccessControlEnumerable, ReentrancyGuard, ICarbonReceipt, ERC1155Burnable, ERC1155Supply {
 
     struct ReceiptData {
         uint256 originalTokenId;
@@ -24,7 +24,6 @@ contract CarbonReceipt55 is Context, AccessControlEnumerable, ICarbonReceipt, ER
         uint256 blockNumber;
         uint256 blockTime;        
     }
-    
     
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
@@ -34,6 +33,10 @@ contract CarbonReceipt55 is Context, AccessControlEnumerable, ICarbonReceipt, ER
 
     mapping(uint256 => ReceiptData[]) _receipts;
     
+    modifier onlyMinter() {
+        require(hasRole(MINTER_ROLE, _msgSender()), "CarbonReceipt55: must have minter role to mint");
+        _;
+    }
     
     constructor(string memory name_, string memory symbol_) ERC1155("") {
         _name = name_;
@@ -60,13 +63,11 @@ contract CarbonReceipt55 is Context, AccessControlEnumerable, ICarbonReceipt, ER
         uint256 amount,
         uint256 originalTokenId,
         bytes memory data
-    ) public override {
-        require(hasRole(MINTER_ROLE, _msgSender()), "CarbonReceipt55: must have minter role to mint");
-
-        super._mint(to, tokenId, amount, data);
-
+    ) public override onlyMinter nonReentrant {
         ReceiptData memory receipt = ReceiptData(originalTokenId, amount, block.number, block.timestamp);
         _receipts[tokenId].push(receipt);
+
+        super._mint(to, tokenId, amount, data);
     }
 
     function batchMintReceipt(
@@ -75,14 +76,13 @@ contract CarbonReceipt55 is Context, AccessControlEnumerable, ICarbonReceipt, ER
         uint256[] memory amounts,
         uint256[] memory originalTokenIds,
         bytes memory data
-    ) public override {
-        require(hasRole(MINTER_ROLE, _msgSender()), "CarbonReceipt55: must have minter role to mint");
+    ) public override onlyMinter nonReentrant {
 
         for (uint256 i = 0; i < tokenIds.length; i++) {
-            super._mint(to, tokenIds[i], amounts[i], data);
-
             ReceiptData memory receipt = ReceiptData(originalTokenIds[i], amounts[i], block.number, block.timestamp);
             _receipts[tokenIds[i]].push(receipt);
+
+            super._mint(to, tokenIds[i], amounts[i], data);
         }
     }
 
