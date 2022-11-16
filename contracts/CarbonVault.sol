@@ -35,7 +35,6 @@ contract CarbonVault is ERC165, ERC1155Receiver, Ownable {
 
     Counters.Counter private _tokenIds;
 
-    mapping(uint256 => string) private _tokenUris;
     ICarbonReceipt private _receiptToken;
 
     mapping(address => bool) private _supportedTokens;
