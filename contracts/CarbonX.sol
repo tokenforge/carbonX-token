@@ -32,6 +32,7 @@ contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable, ICarbonX {
     }
 
     constructor(address signer_, string memory baseUri_) ERC1155(baseUri_) {
+        require(signer_ != address(0), "Signer must not be zero address");
         _signer = signer_;
     }
 
@@ -42,6 +43,7 @@ contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable, ICarbonX {
     }
 
     function setSigner(address signer_) external onlyOwner {
+        require(signer_ != address(0), "Signer must not be zero address");
         require(signer_ != _signer, "Address is already signer");
 
         address oldSigner = _signer;
