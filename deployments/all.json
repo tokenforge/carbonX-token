@@ -660,7 +660,7 @@
           ]
         },
         "CarbonReceipt20": {
-          "address": "0x0bd9a2eAe932cD3f3b8013ffEB8142BBdE45ee9E",
+          "address": "0x8df272D00E6409E41D3f4AFC8AB48B96838E2060",
           "abi": [
             {
               "inputs": [
@@ -1392,13 +1392,18 @@
           ]
         },
         "CarbonReceipt55": {
-          "address": "0xa017e36871bC40a06AE97673da9ccAA432327755",
+          "address": "0x5Ed8cb26e226Bc48e4AfD24FDa5d57b18d634a54",
           "abi": [
             {
               "inputs": [
                 {
                   "internalType": "string",
-                  "name": "baseUri_",
+                  "name": "name_",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "symbol_",
                   "type": "string"
                 }
               ],
@@ -1947,6 +1952,71 @@
             {
               "inputs": [
                 {
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "index",
+                  "type": "uint256"
+                }
+              ],
+              "name": "receiptData",
+              "outputs": [
+                {
+                  "components": [
+                    {
+                      "internalType": "uint256",
+                      "name": "originalTokenId",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "amount",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "blockNumber",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "blockTime",
+                      "type": "uint256"
+                    }
+                  ],
+                  "internalType": "struct CarbonReceipt55.ReceiptData",
+                  "name": "",
+                  "type": "tuple"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                }
+              ],
+              "name": "receiptDataCount",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
                   "internalType": "bytes32",
                   "name": "role",
                   "type": "bytes32"
@@ -2124,7 +2194,7 @@
           ]
         },
         "CarbonVault": {
-          "address": "0x8c9c6c60929135dDF2A22915E546a65d476807e7",
+          "address": "0x23eF444Af505259264957C61766D07Ea2b10ac2C",
           "abi": [
             {
               "inputs": [
@@ -2210,6 +2280,31 @@
                 {
                   "indexed": true,
                   "internalType": "address",
+                  "name": "oldToken",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "newToken",
+                  "type": "address"
+                }
+              ],
+              "name": "ReceiptTokenChanged",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "operator",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
                   "name": "from",
                   "type": "address"
                 },
@@ -2244,6 +2339,19 @@
                 }
               ],
               "name": "addSupportedToken",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "contract ICarbonReceipt",
+                  "name": "receiptToken_",
+                  "type": "address"
+                }
+              ],
+              "name": "changeReceiptToken",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
@@ -8949,7 +9057,7 @@
           ]
         },
         "CarbonReceipt20": {
-          "address": "0x11268bE8A16B1c00C001D18b786c678ca820ff73",
+          "address": "0x7126A7BEBf57B17D472fA171fD443589569903C8",
           "abi": [
             {
               "inputs": [
@@ -9681,13 +9789,18 @@
           ]
         },
         "CarbonReceipt55": {
-          "address": "0xECce91D1b232d855Ce88729a15452c94844E80Eb",
+          "address": "0x223e00C394910444302Cb7AC73b99f2E8e688e40",
           "abi": [
             {
               "inputs": [
                 {
                   "internalType": "string",
-                  "name": "baseUri_",
+                  "name": "name_",
+                  "type": "string"
+                },
+                {
+                  "internalType": "string",
+                  "name": "symbol_",
                   "type": "string"
                 }
               ],
@@ -10236,6 +10349,71 @@
             {
               "inputs": [
                 {
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "index",
+                  "type": "uint256"
+                }
+              ],
+              "name": "receiptData",
+              "outputs": [
+                {
+                  "components": [
+                    {
+                      "internalType": "uint256",
+                      "name": "originalTokenId",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "amount",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "blockNumber",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "blockTime",
+                      "type": "uint256"
+                    }
+                  ],
+                  "internalType": "struct CarbonReceipt55.ReceiptData",
+                  "name": "",
+                  "type": "tuple"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "tokenId",
+                  "type": "uint256"
+                }
+              ],
+              "name": "receiptDataCount",
+              "outputs": [
+                {
+                  "internalType": "uint256",
+                  "name": "",
+                  "type": "uint256"
+                }
+              ],
+              "stateMutability": "view",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
                   "internalType": "bytes32",
                   "name": "role",
                   "type": "bytes32"
@@ -10413,7 +10591,7 @@
           ]
         },
         "CarbonVault": {
-          "address": "0xDeBB0ea069065981FB8d2Cfa8451288671eFa853",
+          "address": "0xe319589E97767AE8Ae19eCBc679f1BEFAd71CFFb",
           "abi": [
             {
               "inputs": [
@@ -10499,6 +10677,31 @@
                 {
                   "indexed": true,
                   "internalType": "address",
+                  "name": "oldToken",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "newToken",
+                  "type": "address"
+                }
+              ],
+              "name": "ReceiptTokenChanged",
+              "type": "event"
+            },
+            {
+              "anonymous": false,
+              "inputs": [
+                {
+                  "indexed": true,
+                  "internalType": "address",
+                  "name": "operator",
+                  "type": "address"
+                },
+                {
+                  "indexed": true,
+                  "internalType": "address",
                   "name": "from",
                   "type": "address"
                 },
@@ -10533,6 +10736,19 @@
                 }
               ],
               "name": "addSupportedToken",
+              "outputs": [],
+              "stateMutability": "nonpayable",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "contract ICarbonReceipt",
+                  "name": "receiptToken_",
+                  "type": "address"
+                }
+              ],
+              "name": "changeReceiptToken",
               "outputs": [],
               "stateMutability": "nonpayable",
               "type": "function"
