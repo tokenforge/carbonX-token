@@ -11,7 +11,7 @@ interface ICarbonX {
         uint256[] memory tokenIds,
         uint256[] memory amounts,
         bytes memory data
-    ) external returns (bool);
+    ) external view returns (bool);
 
     function onTransferIntoVaultSuccessfullyDone(
         address operator,
