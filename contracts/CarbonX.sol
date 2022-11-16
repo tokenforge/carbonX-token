@@ -13,11 +13,41 @@ import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 
 import "./ICarbonX.sol";
 
-contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable, ICarbonX {
+interface CarbonXErrors {
+    
+    /// Signer must not be zero-address
+    error ErrSignerMustNotBeZeroAddress();
+
+    /// A token with Token-ID `tokenId` has not been created yet.
+    /// @param tokenId the Token-Id
+    error ErrTokenNotExists(uint256 tokenId);
+
+    /// Token `tokenId` already exists, use mint instead
+    /// @param tokenId the Token-Id
+    error ErrTokenAlreadyExists(uint256 tokenId);
+    
+    /// Either signature is wrong or parameters have been corrupted
+    error ErrInvalidSignature();
+    
+    /// Initial supply `amount` is greater than max-supply `maxSupply`
+    /// @param tokenId the Token-Id
+    /// @param amount The initial amount of token to create into beneficiaries wallet
+    /// @param maxSupply the overall max supply for this particular token-id
+    error ErrInitialSupplyGreaterThanNaxSupply(uint256 tokenId, uint256 amount, uint256 maxSupply);
+    
+    // Minting would violate max token supply of `maxSupply`
+    /// @param tokenId the Token-Id
+    /// @param newSupply the new max-supply that would be created 
+    /// @param maxSupply the overall max supply for this particular token-id
+    error ErrMintWouldViolateMaxTokenSupply(uint256 tokenId, uint256 newSupply, uint256 maxSupply);
+}
+
+contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable, ICarbonX, CarbonXErrors {
     using ECDSA for bytes32;
 
     // Signer
     address private _signer;
+
     event SignerChanged(address indexed oldSigner, address indexed _signer);
 
     // Token-URIs
@@ -27,24 +57,34 @@ contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable, ICarbonX {
     mapping(uint256 => uint256) private _maxTokenSupplies;
 
     modifier tokenExists(uint256 tokenId) {
-        require(exists(tokenId));
+        if(! exists(tokenId)) {
+            revert ErrTokenNotExists(tokenId);
+        }
         _;
     }
 
     constructor(address signer_, string memory baseUri_) ERC1155(baseUri_) {
-        require(signer_ != address(0), "Signer must not be zero address");
+        if (signer_ == address(0)) {
+            revert ErrSignerMustNotBeZeroAddress();
+        }
+
         _signer = signer_;
     }
 
     /// @notice Helper to know signers address
     /// @return the signer address
-    function signer() public view virtual returns (address) {
+    function getSigner() public view virtual returns (address) {
         return _signer;
     }
 
     function setSigner(address signer_) external onlyOwner {
-        require(signer_ != address(0), "Signer must not be zero address");
-        require(signer_ != _signer, "Address is already signer");
+        if (signer_ == address(0)) {
+            revert ErrSignerMustNotBeZeroAddress();
+        }
+        
+        if (signer_ == _signer) {
+            return;
+        }
 
         address oldSigner = _signer;
 
@@ -84,9 +124,14 @@ contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable, ICarbonX {
         return keccak256(abi.encode(to, tokenId, amount, tokenUri, address(this)));
     }
 
-    /**
-     * @dev Creates a new token with max supply, mints $amount into $to address
-     */
+    /// @dev Creates a new token with max supply, mints $amount into $to address
+    /// 
+    /// @param to Beneficiary of the initial token creation
+    /// @param tokenId the token-Id
+    /// @param amount The initial amount of token to create into beneficiaries wallet
+    /// @param maxSupply the overall max supply for this particular token-id
+    /// @param tokenUri the token-uri for the particular token-id
+    /// @param signature The ECDSA-signature
     function create(
         address to,
         uint256 tokenId,
@@ -96,17 +141,17 @@ contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable, ICarbonX {
         bytes memory signature
     ) public {
         if (exists(tokenId)) {
-            revert("Token already exists, use mint instead");
+            revert ErrTokenAlreadyExists(tokenId);
         }
 
         bytes32 message = createMessage(to, tokenId, amount, tokenUri).toEthSignedMessageHash();
 
         // verifies that the sha3(account, nonce, address(this)) has been signed by _allowancesSigner
-        if (message.recover(signature) != signer()) {
-            revert("Either signature is wrong or parameters have been corrupted");
+        if (message.recover(signature) != _signer) {
+            revert ErrInvalidSignature();
         }
         if (amount > maxSupply) {
-            revert("Initial supply greater than max supply");
+            revert ErrInitialSupplyGreaterThanNaxSupply(tokenId, amount, maxSupply);
         }
 
         bytes memory data;
@@ -134,18 +179,17 @@ contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable, ICarbonX {
         bytes32 message = createMessage(to, tokenId, amount).toEthSignedMessageHash();
 
         // verifies that the sha3(account, nonce, address(this)) has been signed by _allowancesSigner
-        if (message.recover(signature) != signer()) {
-            revert("Either signature is wrong or parameters have been corrupted");
+        if (message.recover(signature) != _signer) {
+            revert ErrInvalidSignature();
         }
 
         if (amount + totalSupply(tokenId) > _maxTokenSupplies[tokenId]) {
-            revert("Mint would violate max token supply");
+            revert ErrMintWouldViolateMaxTokenSupply(tokenId, amount + totalSupply(tokenId), _maxTokenSupplies[tokenId]);
         }
 
         bytes memory data;
         _mint(to, tokenId, amount, data);
     }
-
     /// @dev Mints token into msg.sender for existing tokenId to a specific beneficiary
     /// maximum supply may not exceed maxTokenSupplies[tokenId]
     ///
@@ -200,11 +244,6 @@ contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable, ICarbonX {
 
     function _setTokenUri(uint256 id, string memory tokenUri) internal {
         _tokenUris[id] = tokenUri;
-    }
-
-    function withdraw() external onlyOwner {
-        uint256 balance = address(this).balance;
-        payable(msg.sender).transfer(balance);
     }
 
     function isTransferIntoVaultAccepted(
