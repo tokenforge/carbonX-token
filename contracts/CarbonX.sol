@@ -47,7 +47,11 @@ contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable, ICarbonX, CarbonXEr
     // Signer
     address private _signer;
 
+    // Event to emit when Signer will be changed
     event SignerChanged(address indexed oldSigner, address indexed _signer);
+    
+    // Event to emit when a TokenUri has been changed or initially set 
+    event TokenUriChanged(uint256 indexed tokenId, bytes32 oldUriHash, bytes32 newUriHash);
 
     // Token-URIs
     mapping(uint256 => string) private _tokenUris;
@@ -143,7 +147,14 @@ contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable, ICarbonX, CarbonXEr
             revert ErrTokenAlreadyExists(tokenId);
         }
 
-        bytes32 message = createMessage(to, tokenId, amount, tokenUri).toEthSignedMessageHash();
+        bytes32 message;
+
+        bytes memory tmpTokenUriBytes = bytes(tokenUri);
+        if(tmpTokenUriBytes.length > 0) {
+            message = createMessage(to, tokenId, amount, tokenUri).toEthSignedMessageHash();
+        } else {
+            message = createMessage(to, tokenId, amount).toEthSignedMessageHash();
+        }
 
         // verifies that the sha3(account, nonce, address(this)) has been signed by _allowancesSigner
         if (message.recover(signature) != _signer) {
@@ -243,7 +254,12 @@ contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable, ICarbonX, CarbonXEr
     }
 
     function setTokenUri(uint256 id, string memory tokenUri) external onlyOwner {
+        bytes32 oldUriHash = keccak256(abi.encodePacked(_tokenUris[id]));
+        bytes32 newUriHash = keccak256(abi.encodePacked(tokenUri));
+        
         _setTokenUri(id, tokenUri);
+        
+        emit TokenUriChanged(id, oldUriHash, newUriHash);
     }
 
     function _setTokenUri(uint256 id, string memory tokenUri) internal {

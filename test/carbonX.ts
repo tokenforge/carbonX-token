@@ -4,13 +4,13 @@ import chaiAsPromised from 'chai-as-promised';
 
 import {SignerWithAddress} from '@nomiclabs/hardhat-ethers/signers';
 
-import {BigNumber, BigNumberish, Signer} from "ethers";
+import {BigNumber, BigNumberish} from "ethers";
 import {CarbonX, CarbonX__factory} from "../typechain";
 import {createSignature} from "./lib/signatures";
+import {keccak256, toUtf8Bytes} from "ethers/lib/utils";
 
 chai.use(chaiAsPromised);
 const {expect} = chai;
-
 
 describe('CarbonX BasicTests', () => {
     let
@@ -25,7 +25,7 @@ describe('CarbonX BasicTests', () => {
         [axel, ben, chantal, governance, backend] = await ethers.getSigners();
 
         tokenFactory = (await ethers.getContractFactory('CarbonX', governance)) as CarbonX__factory;
-    });    
+    });
 
     it('Will deny a zero-address for signer on ctor', async () => {
         await expect(tokenFactory.deploy(ethers.constants.AddressZero, 'ipfs://'))
@@ -41,19 +41,19 @@ describe('CarbonX BasicTests', () => {
 
             expect(token.address).to.properAddress;
         });
-        
-        it('reverts when changing signer to zero-address', async() => {
+
+        it('reverts when changing signer to zero-address', async () => {
             await expect(token.setSigner(ethers.constants.AddressZero))
                 .to.be.revertedWithCustomError(tokenFactory, 'ErrSignerMustNotBeZeroAddress');
         })
 
-        it('reverts when changing signer as non-owner', async() => {
+        it('reverts when changing signer as non-owner', async () => {
             const benAsSigner = token.connect(ben);
             await expect(benAsSigner.setSigner(ben.address))
                 .to.be.revertedWith("Ownable: caller is not the owner")
         })
 
-        it('wont emit events when signer will bre replaced with itself', async() => {
+        it('wont emit events when signer will bre replaced with itself', async () => {
             await expect(token.setSigner(await token.getSigner()))
                 .to.not.emit(token, 'SignerChanged')
         })
@@ -63,7 +63,7 @@ describe('CarbonX BasicTests', () => {
                 .to.emit(token, 'SignerChanged')
                 .withArgs(backend.address, axel.address);
         })
-        
+
         // 4
         describe('we can create and mint tokens', async () => {
             const
@@ -88,7 +88,10 @@ describe('CarbonX BasicTests', () => {
                 const balanceBefore = await token.balanceOf(axel.address, tokenId);
                 expect(balanceBefore).to.eq(0);
 
-                await axelAsMinter.create(axel.address, tokenId, amount, maxSupply, hash, sigForAxel);
+                await expect(axelAsMinter.create(axel.address, tokenId, amount, maxSupply, hash, sigForAxel))
+                    .to.emit(token, 'TransferSingle')
+                    .withArgs(axel.address, ethers.constants.AddressZero, axel.address, tokenId, amount)
+                    .to.not.emit(token, 'TokenUriChanged')
 
                 const balance = await token.balanceOf(axel.address, tokenId);
                 expect(balance).to.eq(1);
@@ -100,19 +103,65 @@ describe('CarbonX BasicTests', () => {
                 expect(uri).to.eq(hash);
             });
 
+            it('should create tokens to Axel successfully although tokenUri is empty', async () => {
+                const emptyUrl = '';
+                const newSigForAxel = await createSignature(token, axel.address, tokenId, amount, emptyUrl, backend);
+                await expect(axelAsMinter.create(axel.address, tokenId, amount, maxSupply, emptyUrl, newSigForAxel))
+                    .to.emit(token, 'TransferSingle')
+                    .withArgs(axel.address, ethers.constants.AddressZero, axel.address, tokenId, amount)
+                    .to.not.emit(token, 'TokenUriChanged')
+
+
+                const uri = await token.uri(tokenId);
+                expect(uri).to.eq(emptyUrl);
+            });
+
+            it('should fail when creating tokens will happen with invalid signature', async () => {
+                const otherUrl = '';
+                const newSigForAxel = await createSignature(token, axel.address, tokenId, amount, otherUrl, backend);
+
+                await expect(axelAsMinter.create(axel.address, tokenId, amount, maxSupply, hash, newSigForAxel))
+                    .to.be.revertedWithCustomError(token, 'ErrInvalidSignature');
+            });
+
+
+            it('will emit an event when tokenUri get changed', async () => {
+                await axelAsMinter.create(axel.address, tokenId, amount, maxSupply, hash, sigForAxel)
+
+                const newUri = 'uri://new';
+
+                await expect(token.setTokenUri(tokenId, newUri))
+                    .to.emit(token, 'TokenUriChanged')
+                    .withArgs(tokenId, keccak256(toUtf8Bytes(hash)), keccak256(toUtf8Bytes(newUri)))
+
+                const uri = await token.uri(tokenId);
+                expect(uri).to.eq(newUri);
+            });
+
+            it('will revert when tokenUri will be changed by notOwner', async () => {
+                await axelAsMinter.create(axel.address, tokenId, amount, maxSupply, hash, sigForAxel)
+
+                const newUri = 'uri://new';
+
+                await expect(token.connect(ben).setTokenUri(tokenId, newUri))
+                    .to.be.revertedWith('Ownable: caller is not the owner')
+            });
+
             it('should revert when re-creating same token', async () => {
                 await axelAsMinter.create(axel.address, tokenId, amount, maxSupply, hash, sigForAxel);
 
                 await expect(axelAsMinter.create(axel.address, tokenId, amount, maxSupply, hash, sigForAxel))
-                    .to.be.revertedWithCustomError(token, 'ErrTokenAlreadyExists');
+                    .to.be.revertedWithCustomError(token, 'ErrTokenAlreadyExists')
+                    .withArgs(tokenId)
             });
-            
+
             it('should revert if amount is greater than max supply', async () => {
                 const balanceBefore = await token.balanceOf(axel.address, tokenId);
                 expect(balanceBefore).to.eq(0);
 
                 await expect(axelAsMinter.create(axel.address, tokenId, amount, amount - 1, hash, sigForAxel))
                     .to.be.revertedWithCustomError(token, 'ErrInitialSupplyGreaterThanNaxSupply')
+                    .withArgs(tokenId, amount, amount - 1)
             });
 
             it('should not be able to mint exceeding max supply', async () => {
@@ -123,36 +172,54 @@ describe('CarbonX BasicTests', () => {
 
                 const sigForBen = await createSignature(token, ben.address, tokenId, maxSupply, '', backend);
                 await expect(axelAsMinter.mintTo(ben.address, tokenId, maxSupply, sigForBen))
-                    .to.be.revertedWithCustomError(token, 'ErrMintWouldViolateMaxTokenSupply');
-            });
-
-            it('can mint more tokens to Others successfully', async () => {
-                const totalSupplyBefore = await token.totalSupply(tokenId);
-
-                const balanceBefore = await token.balanceOf(ben.address, tokenId);
-                expect(balanceBefore).to.eq(0);
-
-                await axelAsMinter.create(axel.address, tokenId, amount, maxSupply, hash, sigForAxel);
-
-                const sigForBen = await createSignature(token, ben.address, tokenId, 5, '', backend);
-                await axelAsMinter.mintTo(ben.address, tokenId, 5, sigForBen);
-
-                const balanceAxel = await token.balanceOf(axel.address, tokenId);
-                expect(balanceAxel).to.eq(amount);
-
-                const balanceBen = await token.balanceOf(ben.address, tokenId);
-                expect(balanceBen).to.eq(5);
-
-                const totalSupply = await token.totalSupply(tokenId);
-                expect(totalSupply).to.eq(totalSupplyBefore.add(amount + 5));
+                    .to.be.revertedWithCustomError(token, 'ErrMintWouldViolateMaxTokenSupply')
+                    .withArgs(tokenId, amount + maxSupply, maxSupply)
             });
 
             it('minting of un-created token will be reverted', async () => {
                 const sigForBen = await createSignature(token, ben.address, tokenId, 5, '', backend);
                 await expect(axelAsMinter.mintTo(ben.address, tokenId, 5, sigForBen))
-                    // .to.be.revertedWith('ErrTokenNotExists')
-                    .to.be.revertedWithCustomError(token, 'ErrTokenNotExists');
+                    .to.be.revertedWithCustomError(token, 'ErrTokenNotExists')
+                    .withArgs(tokenId)
             });
+
+            describe('minting tokens', async () => {
+
+                let totalSupplyBefore: BigNumber, balanceBefore: BigNumber; 
+
+                beforeEach( async () => {
+                    totalSupplyBefore = await token.totalSupply(tokenId);
+
+                    balanceBefore = await token.balanceOf(ben.address, tokenId);
+                    await axelAsMinter.create(axel.address, tokenId, amount, maxSupply, hash, sigForAxel);
+                })
+                
+                it('can mint more tokens to Others successfully', async () => {
+                    expect(balanceBefore).to.eq(0);
+
+                    const sigForBen = await createSignature(token, ben.address, tokenId, 5, '', backend);
+                    await expect(axelAsMinter.mintTo(ben.address, tokenId, 5, sigForBen))
+                        .to.emit(token, 'TransferSingle')
+                        .withArgs(axel.address, ethers.constants.AddressZero, ben.address, tokenId, 5);
+
+                    const balanceAxel = await token.balanceOf(axel.address, tokenId);
+                    expect(balanceAxel).to.eq(amount);
+
+                    const balanceBen = await token.balanceOf(ben.address, tokenId);
+                    expect(balanceBen).to.eq(5);
+
+                    const totalSupply = await token.totalSupply(tokenId);
+                    expect(totalSupply).to.eq(totalSupplyBefore.add(amount + 5));
+                });
+
+                it('will fail when minting will happen with invalid signature', async () => {
+                    const sigForBen = await createSignature(token, ben.address, tokenId, 6, '', backend);
+                    
+                    await expect(axelAsMinter.mintTo(ben.address, tokenId, 5, sigForBen))
+                        .to.be.revertedWithCustomError(token, 'ErrInvalidSignature');
+                });
+
+            })
 
         });
 
