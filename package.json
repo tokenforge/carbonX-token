@@ -77,16 +77,20 @@
     "ethers": "^5.4.7",
     "hardhat": "^2.12.2",
     "hardhat-gas-reporter": "^1.0.8",
+    "prettier": "^2.7.1",
+    "prettier-plugin-solidity": "^1.0.0-rc.1",
+    "solhint": "^3.3.7",
+    "solhint-plugin-prettier": "^0.0.5",
     "solidity-coverage": "^0.8.0",
     "ts-node": ">=8.0.0",
     "typechain": "^8.1.0",
-    "typescript": ">=4.5.0"
-  },
-  "dependencies": {
-    "@openzeppelin/contracts": "^4.8.0",
+    "typescript": ">=4.5.0",
     "cross-env": "^7.0.3",
     "dotenv": "^16.0.3",
     "hardhat-deploy": "^0.11.20",
     "mocha": "^10.1.0"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.8.0"
   }
 }

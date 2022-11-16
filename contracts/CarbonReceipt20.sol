@@ -24,12 +24,12 @@ contract CarbonReceipt20 is ICarbonReceipt, ERC20PresetMinterPauser, ReentrancyG
      */
     function mintReceipt(
         address to,
-        uint256, /*tokenId*/
+        uint256 /*tokenId*/,
         uint256 amount,
-        uint256, /*originalTokenId*/
+        uint256 /*originalTokenId*/,
         bytes memory /*data*/
     ) public override onlyMinter nonReentrant {
-        mint(to, amount * (10**this.decimals()));
+        mint(to, amount * (10 ** this.decimals()));
     }
 
     /*
@@ -39,7 +39,7 @@ contract CarbonReceipt20 is ICarbonReceipt, ERC20PresetMinterPauser, ReentrancyG
         address to,
         uint256[] memory tokenIds,
         uint256[] memory amounts,
-        uint256[] memory, /*originalTokenId*/
+        uint256[] memory /*originalTokenId*/,
         bytes memory /*data*/
     ) public override onlyMinter nonReentrant {
         for (uint256 i = 0; i < tokenIds.length; i++) {
