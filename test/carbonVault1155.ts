@@ -37,12 +37,6 @@ describe('CarbonX Vault 1155 Tests', () => {
         token = created.token;
         receipt = created.receipt;
         vault = created.vault;
-
-        // Vault becomes MinterRole in Receipt Token
-        // await receipt.delegatePermissionsTo(vault.address);
-        //await receipt.grantRole(await receipt.MINTER_ROLE(), vault.address);
-
-
     });
     
     it('has the right setup', async() => {
@@ -88,9 +82,11 @@ describe('CarbonX Vault 1155 Tests', () => {
             await axelAsMinter.create(axel.address, tokenId, amount, maxSupply, hash, sigForAxel);
         })
 
-        it('Axel gets token and stakes them into Vault', async () => {
+        it('Axel contains $amount tokens as preparation for staking', async() => {
             expect(await token.totalSupply(tokenId)).to.eq(amount);
-            
+        })
+
+        it('Axel gets token and stakes them into Vault', async () => {
             const currentReceiptTokenIdBefore = (await vault.currentReceiptTokenId()).toNumber();
             
             await expect(axelAsSigner.safeTransferFrom(axel.address, vault.address, tokenId, amount, '0x'))
@@ -123,7 +119,54 @@ describe('CarbonX Vault 1155 Tests', () => {
             const receiptData = await receipt.receiptData(currentReceiptTokenId-1, 0);
             expect(receiptData.originalTokenId).eq(tokenId);
         });
-        
+
+        it('Axel stakes token via batch into Vault', async () => {
+            const sig2ForAxel = await createSignature(token, axel.address, tokenId+1, amount+1, hash, backend);
+            await axelAsMinter.create(axel.address, tokenId+1, amount+1, maxSupply, hash, sig2ForAxel);
+
+            const currentReceiptTokenIdBefore = (await vault.currentReceiptTokenId()).toNumber();
+
+            await expect(axelAsSigner.safeBatchTransferFrom(axel.address, vault.address, [tokenId, tokenId+1], [amount, amount+1], '0x'))
+
+                // Event on CarbonX
+                .to.emit(axelAsSigner, 'TransferBatch')
+                .withArgs(axel.address, axel.address, vault.address, [tokenId, tokenId + 1], [amount, amount + 1])
+
+                // Event on Vault
+                .to.emit(vault, 'CarbonBatchDeposited')
+                .withArgs( [currentReceiptTokenIdBefore, currentReceiptTokenIdBefore+1], // receiptTokenIds
+                    [amount, amount+1],             // amount
+                    axel.address,                   // from
+                    token.address,                  // _msgSender()
+                    [tokenId, tokenId+1]            // originalTokenIds 
+                )
+
+                // Event on Vault for minting receipt token
+                .to.emit(receipt, 'TransferSingle')
+                .withArgs(vault.address, ethers.constants.AddressZero, axel.address, currentReceiptTokenIdBefore, amount)
+            ;
+
+            expect(await token.totalSupply(tokenId)).to.eq(amount);
+            expect(await token.balanceOf(axel.address, tokenId)).to.eq(0);
+            expect(await token.balanceOf(vault.address, tokenId)).to.eq( amount );
+
+            // Axel got $amount receipt token:
+            const currentReceiptTokenId = (await vault.currentReceiptTokenId()).toNumber();
+            expect(await receipt.balanceOf(axel.address, currentReceiptTokenId - 2 )).to.eq(amount);
+            expect(await receipt.balanceOf(axel.address, currentReceiptTokenId - 1 )).to.eq(amount + 1);
+
+            expect(await receipt.receiptDataCount(currentReceiptTokenId-2)).to.eq(1);
+            expect(await receipt.receiptDataCount(currentReceiptTokenId-1)).to.eq(1);
+
+            const receiptData = await receipt.receiptData(currentReceiptTokenId-2, 0);
+            expect(receiptData.originalTokenId).eq(tokenId);
+
+            const receiptData2 = await receipt.receiptData(currentReceiptTokenId-1, 0);
+            expect(receiptData2.originalTokenId).eq(tokenId+1);
+
+        });
+
+
         it('we can NOT take out any tokens from vault', async () => {
             // vault has no tokens
             expect(await token.balanceOf(vault.address, tokenId)).to.eq( 0 );

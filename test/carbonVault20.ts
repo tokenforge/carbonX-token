@@ -94,10 +94,6 @@ describe('CarbonX Vault Tests', () => {
                 .to.emit(token, 'TransferSingle')
                 .withArgs(axel.address, axel.address, vault.address, tokenId, amount)
 
-                // ERC1155 wouldd be:
-                // .to.emit(token, 'TransferSingle')
-                // .withArgs(vault.address, ethers.constants.AddressZero, axel.address, receiptTokenId, amount)
-
                 // 2. Event: Transfer on the Receipt-token to mint tokens
                 .to.emit(receipt, 'Transfer')
                 .withArgs(ethers.constants.AddressZero, axel.address, amountWithDecimals)

@@ -55,7 +55,13 @@ describe('Carbon Receipt1155 Tests', () => {
     })
 
     it('will revert when non-minter will try to mint', async() => {
-        await expect(receipt.connect(chantal).mintReceipt(ben.address, 123, 1, 100, '0x'))
+        await expect(receipt.connect(chantal).mintReceipt(ben.address, 123, 3, 100, '0x'))
+            .to.be.revertedWithCustomError(receipt, 'ErrMinterRoleRequired')
+            .withArgs(chantal.address)
+    })
+
+    it('will revert when non-minter will try to batch.mint', async() => {
+        await expect(receipt.connect(chantal).batchMintReceipt(ben.address, [123], [4], [100], '0x'))
             .to.be.revertedWithCustomError(receipt, 'ErrMinterRoleRequired')
             .withArgs(chantal.address)
     })
