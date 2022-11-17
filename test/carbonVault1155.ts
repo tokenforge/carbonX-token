@@ -57,7 +57,6 @@ describe('CarbonX Vault 1155 Tests', () => {
         // expect(await receipt.getRoleMember(await receipt.DEFAULT_ADMIN_ROLE(), 0)).to.eq(vault.address);
     })
     
-    // 4
     describe('we can stake tokens into vault', async () => {
         const 
             tokenId = 1001,
