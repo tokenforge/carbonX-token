@@ -3,7 +3,7 @@ import {
     CarbonReceipt55__factory, CarbonVault,
     CarbonVault__factory,
     CarbonX,
-    CarbonX__factory
+    CarbonX__factory, CarbonXMockNotAccepting, CarbonXMockNotAccepting__factory
 } from "../../typechain";
 import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
 import {Contract, ContractFactory} from "ethers";
@@ -61,4 +61,12 @@ export async function createContracts<CarbonReceipt extends Contract, CarbonRece
         receipt: receipt as CarbonReceipt,
         vault
     }
+}
+
+export async function getCarbonTokenMockNotAccepting(governance: SignerWithAddress, backend: SignerWithAddress): Promise<CarbonXMockNotAccepting> {
+    const tokenFactory = (await ethers.getContractFactory('CarbonXMockNotAccepting', governance)) as CarbonXMockNotAccepting__factory;
+    const token = await tokenFactory.deploy(backend.address, 'ipfs://');
+    await token.deployed();
+    
+    return token;
 }

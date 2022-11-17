@@ -18,7 +18,21 @@ import "./ICarbonReceipt.sol";
 import "./CarbonX.sol";
 import "./ICarbonX.sol";
 
-contract CarbonVault is ERC165, ERC1155Receiver, Ownable {
+interface CarbonVaultErrors {
+    /// The received `token` is not supported at the moment.
+    /// @param token address of Token
+    error ErrTokenNotSupported(address token);
+
+    /// New token must have another address
+    /// @param token address of Token
+    error ErrTokenAddressHasNotChanged(address token);
+
+    /// CarbonVault: transfer into vault not accepted
+    /// @param token address of Token
+    error ErrTransferIntoVaultIsNotAccepted(address token);
+}
+
+contract CarbonVault is ERC165, ERC1155Receiver, Ownable, CarbonVaultErrors {
     using ECDSA for bytes32;
     using Counters for Counters.Counter;
 
@@ -38,6 +52,9 @@ contract CarbonVault is ERC165, ERC1155Receiver, Ownable {
         uint256[] originalTokenIds
     );
 
+    event SupportedTokenAdded(address operator, address supportedToken);
+    event SupportedTokenRemoved(address operator, address supportedToken);
+
     event ReceiptTokenChanged(address indexed operator, address indexed oldToken, address indexed newToken);
 
     Counters.Counter private _tokenIds;
@@ -53,10 +70,12 @@ contract CarbonVault is ERC165, ERC1155Receiver, Ownable {
 
     function addSupportedToken(ICarbonX supportedToken) public onlyOwner {
         _supportedTokens[address(supportedToken)] = true;
+        emit SupportedTokenAdded(_msgSender(), address(supportedToken));
     }
 
     function removeSupportedToken(ICarbonX supportedToken) public onlyOwner {
         _supportedTokens[address(supportedToken)] = false;
+        emit SupportedTokenRemoved(_msgSender(), address(supportedToken));
     }
 
     function tokenIsSupported(address token) public view returns (bool) {
@@ -68,7 +87,9 @@ contract CarbonVault is ERC165, ERC1155Receiver, Ownable {
     }
 
     function changeReceiptToken(ICarbonReceipt receiptToken_) public onlyOwner {
-        require(_receiptToken != receiptToken_, "New token must have another address");
+        if (_receiptToken == receiptToken_) {
+            revert ErrTokenAddressHasNotChanged(address(receiptToken_));
+        }
 
         address oldToken = address(_receiptToken);
         _receiptToken = receiptToken_;
@@ -95,7 +116,9 @@ contract CarbonVault is ERC165, ERC1155Receiver, Ownable {
         address originalToken = _msgSender();
         uint256 originalTokenId = tokenId;
 
-        require(tokenIsSupported(originalToken), "Token is not supported");
+        if (!tokenIsSupported(originalToken)) {
+            revert ErrTokenNotSupported(originalToken);
+        }
 
         uint256 receiptTokenId = _tokenIds.current();
         _tokenIds.increment();
@@ -107,7 +130,7 @@ contract CarbonVault is ERC165, ERC1155Receiver, Ownable {
             bool accepted
         ) {
             if (!accepted) {
-                revert("CarbonVault: transfer into vault not accepted");
+                revert ErrTransferIntoVaultIsNotAccepted(originalToken);
             }
         } catch Error(string memory reason) {
             revert(reason);
@@ -144,7 +167,9 @@ contract CarbonVault is ERC165, ERC1155Receiver, Ownable {
         address originalToken = _msgSender();
         uint256[] memory originalTokenIds = tokenIds;
 
-        require(tokenIsSupported(originalToken), "Token is not supported");
+        if (!tokenIsSupported(originalToken)) {
+            revert ErrTokenNotSupported(originalToken);
+        }
 
         try ICarbonX(_msgSender()).isTransferIntoVaultAccepted(operator, from, tokenIds, amounts, data) returns (
             bool accepted
