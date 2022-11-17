@@ -1,7 +1,6 @@
 import {ethers} from "hardhat";
 import {
-    CarbonReceipt20,
-    CarbonReceipt20__factory, CarbonReceipt55__factory, CarbonVault,
+    CarbonReceipt55__factory, CarbonVault,
     CarbonVault__factory,
     CarbonX,
     CarbonX__factory
@@ -54,7 +53,8 @@ export async function createContracts<CarbonReceipt extends Contract, CarbonRece
     await vault.deployed();
 
     // Vault becomes MinterRole in Receipt Token
-    await receipt.grantRole(await receipt.MINTER_ROLE(), vault.address);
+    //await receipt.grantRole(await receipt.MINTER_ROLE(), vault.address);
+    await receipt.delegatePermissionsTo(vault.address);
     
     return {
         token,

@@ -4,14 +4,12 @@ import chaiAsPromised from 'chai-as-promised';
 
 import {SignerWithAddress} from '@nomiclabs/hardhat-ethers/signers';
 
-import {BigNumber, BigNumberish, Signer} from "ethers";
+import {BigNumber, BigNumberish} from "ethers";
 import {
     CarbonReceipt20,
     CarbonReceipt20__factory,
     CarbonVault,
-    CarbonVault__factory,
-    CarbonX,
-    CarbonX__factory
+    CarbonX
 } from "../typechain";
 import {createSignature} from "./lib/signatures";
 import {createContracts} from "./lib/factory";
@@ -58,7 +56,9 @@ describe('CarbonX Vault Tests', () => {
             tokenId = 1001,
             amount = 250,
             maxSupply = 1000,
-            hash = 'NgcFOAfYXwVrmQrUOyB0U5kWU4w1a8Gf2gPPTPBrGTqTl-6qe7ERStbEMamFV4niv1bhFKI5167vzMLApLOEBs0ArvvUiClrRAFb=w600';
+            hash = 'NgcFOAfYXwVrmQrUOyB0U5kWU4w1a8Gf2gPPTPBrGTqTl-6qe7ERStbEMamFV4niv1bhFKI5167vzMLApLOEBs0ArvvUiClrRAFb=w600',
+            amountWithDecimals = ethers.utils.parseUnits(String(amount), "ether")
+        ;
 
         let sigForAxel: string,
             axelAsMinter: CarbonX,
@@ -75,20 +75,93 @@ describe('CarbonX Vault Tests', () => {
 
             await axelAsMinter.create(axel.address, tokenId, amount, maxSupply, hash, sigForAxel);
         })
+        
+        it('Axel contains $amount tokens as preparation for staking', async() => {
+            expect(await token.totalSupply(tokenId)).to.eq(amount);
+        })
 
         it('Axel gets token and stakes them into Vault', async () => {
-            expect(await token.totalSupply(tokenId)).to.eq(amount);
+            const tx = axelAsSigner.safeTransferFrom(axel.address, vault.address, tokenId, amount, '0x')
             
-            await axelAsSigner.safeTransferFrom(axel.address, vault.address, tokenId, amount, '0x')
+            const receiptTokenId = (await vault.currentReceiptTokenId()).toNumber();
+            
+            // We expect 3 Events
+            const txReceipt = await (await tx).wait()
+            expect(txReceipt.events?.length).to.eq(3);
 
+            await expect(tx)
+                // 1. Event on original Token: transfer from Axel into Vault
+                .to.emit(token, 'TransferSingle')
+                .withArgs(axel.address, axel.address, vault.address, tokenId, amount)
+
+                // ERC1155 wouldd be:
+                // .to.emit(token, 'TransferSingle')
+                // .withArgs(vault.address, ethers.constants.AddressZero, axel.address, receiptTokenId, amount)
+
+                // 2. Event: Transfer on the Receipt-token to mint tokens
+                .to.emit(receipt, 'Transfer')
+                .withArgs(ethers.constants.AddressZero, axel.address, amountWithDecimals)
+
+                // 3. Event from Vault 'CarbonDeposited' 
+                .to.emit(vault, 'CarbonDeposited')
+                .withArgs(receiptTokenId, // receiptTokenId
+                    amount,             // amount
+                    axel.address,       // from
+                    token.address,      // _msgSender()
+                    tokenId             // originalTokenId 
+                );
+            
             expect(await token.totalSupply(tokenId)).to.eq(amount);
             expect(await token.balanceOf(axel.address, tokenId)).to.eq(0);
             expect(await token.balanceOf(vault.address, tokenId)).to.eq( amount );
             
             // Axel got $amount receipt token:
-            const tokenBits = BigNumber.from(10).pow(18);
-            const amountReceipt = BigNumber.from(amount).mul(tokenBits);
-            expect(await receipt.balanceOf(axel.address)).to.eq(amountReceipt);
+            expect(await receipt.balanceOf(axel.address)).to.eq(amountWithDecimals);
+        });
+
+        it('Axel stakes token via batchTransfer into Vault', async () => {
+            
+            // Mint a second token
+            const sig2ForAxel = await createSignature(token, axel.address, tokenId + 1, amount + 1, hash, backend);
+            await axelAsMinter.create(axel.address, tokenId + 1, amount + 1, maxSupply, hash, sig2ForAxel);
+            
+            const tx = axelAsSigner.safeBatchTransferFrom(axel.address, vault.address, [tokenId, tokenId + 1], [amount, amount + 1], '0x')
+
+            const receiptTokenId = (await vault.currentReceiptTokenId()).toNumber();
+
+            // We expect 4 Events: TransferBatch, CarbonBatchDeposited, 2x Transfer for Mint
+            const txReceipt = await (await tx).wait()
+            expect(txReceipt.events?.length).to.eq(4);
+            
+            await expect(tx)
+                // 1. Event on original Token: transfer from Axel into Vault
+                .to.emit(token, 'TransferBatch')
+                .withArgs(axel.address, axel.address, vault.address, [tokenId, tokenId + 1], [amount, amount + 1])
+
+                // 2. Event: Transfer on the Receipt-token to mint tokens
+                .to.emit(receipt, 'Transfer')
+                .withArgs(ethers.constants.AddressZero, axel.address, amountWithDecimals)
+
+                // 3. Event from Vault 'CarbonDeposited' 
+                .to.emit(vault, 'CarbonBatchDeposited')
+                .withArgs( [receiptTokenId, receiptTokenId+1], // receiptTokenIds
+                    [amount, amount+1],             // amount
+                    axel.address,                   // from
+                    token.address,                  // _msgSender()
+                    [tokenId, tokenId+1]            // originalTokenIds 
+                );
+
+            expect(await token.totalSupply(tokenId)).to.eq(amount);
+            expect(await token.totalSupply(tokenId + 1)).to.eq(amount + 1);
+            expect(await token.balanceOf(axel.address, tokenId)).to.eq(0);
+            expect(await token.balanceOf(axel.address, tokenId + 1)).to.eq(0);
+            
+            expect(await token.balanceOf(vault.address, tokenId)).to.eq( amount);
+            expect(await token.balanceOf(vault.address, tokenId+1)).to.eq( amount+1);
+
+            // Axel got $amount + $amount+1 receipt token:
+            const receiptAmountWithDecimals = ethers.utils.parseUnits(String(amount + amount + 1), "ether")
+            expect(await receipt.balanceOf(axel.address)).to.eq(receiptAmountWithDecimals);
         });
         
         it('we can NOT take out any tokens from vault', async () => {
@@ -101,10 +174,6 @@ describe('CarbonX Vault Tests', () => {
             // we ensure that $governance is Owner ot $token
             expect(await vault.owner()).eq(governance.address) 
             
-            // and expect to fail when $governance wants to take out tokens out of vault
-        //    const caller = vault.connect(governance);
-            //await vault.setApprovalForAll(governance.address, true);
-            //expect(await caller.safeTransferFrom(vault.address, ben.address, tokenId, amount, '0x'));
         })
         
     });

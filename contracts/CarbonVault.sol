@@ -4,6 +4,7 @@
 
 pragma solidity 0.8.6;
 
+import "hardhat/console.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "@openzeppelin/contracts/utils/Counters.sol";
@@ -29,9 +30,15 @@ contract CarbonVault is ERC165, ERC1155Receiver, Ownable {
         uint256 originalTokenId
     );
 
-    event ReceiptTokenChanged(address indexed operator, address indexed oldToken, address indexed newToken);
+    event CarbonBatchDeposited(
+        uint256[] tokenIds,
+        uint256[] amounts,
+        address indexed from,
+        address tokenAddress,
+        uint256[] originalTokenIds
+    );
 
-    event TransferSingle(address indexed operator, address indexed from, address indexed to, uint256 id, uint256 value);
+    event ReceiptTokenChanged(address indexed operator, address indexed oldToken, address indexed newToken);
 
     Counters.Counter private _tokenIds;
 
@@ -90,14 +97,13 @@ contract CarbonVault is ERC165, ERC1155Receiver, Ownable {
 
         require(tokenIsSupported(originalToken), "Token is not supported");
 
-        _tokenIds.increment();
-
         uint256 receiptTokenId = _tokenIds.current();
+        _tokenIds.increment();
 
         uint256[] memory tokenIds = _asSingletonArray(tokenId);
         uint256[] memory amounts = _asSingletonArray(amount);
 
-        try ICarbonX(_msgSender()).isTransferIntoVaultAccepted(operator, from, tokenIds, amounts, data) returns (
+        try ICarbonX(originalToken).isTransferIntoVaultAccepted(operator, from, tokenIds, amounts, data) returns (
             bool accepted
         ) {
             if (!accepted) {
@@ -135,7 +141,10 @@ contract CarbonVault is ERC165, ERC1155Receiver, Ownable {
         uint256[] memory amounts,
         bytes memory data
     ) public virtual override returns (bytes4) {
-        require(tokenIsSupported(_msgSender()), "Token is not supported");
+        address originalToken = _msgSender();
+        uint256[] memory originalTokenIds = tokenIds;
+
+        require(tokenIsSupported(originalToken), "Token is not supported");
 
         try ICarbonX(_msgSender()).isTransferIntoVaultAccepted(operator, from, tokenIds, amounts, data) returns (
             bool accepted
@@ -149,9 +158,15 @@ contract CarbonVault is ERC165, ERC1155Receiver, Ownable {
             revert("CarbonVault: transfer to not-compatible implementer");
         }
 
-        // @TODO to be implemented
-        // _receiptToken.batchMintReceipt(from, tokenIds, amounts, data);
-        // like _receiptToken.mintReceipt(from, receiptTokenId, amount, originalTokenId, data);
+        uint256[] memory receiptTokenIds = new uint256[](tokenIds.length);
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            receiptTokenIds[i] = _tokenIds.current();
+            _tokenIds.increment();
+        }
+
+        _receiptToken.batchMintReceipt(from, receiptTokenIds, amounts, originalTokenIds, data);
+
+        emit CarbonBatchDeposited(receiptTokenIds, amounts, from, _msgSender(), originalTokenIds);
 
         try
             ICarbonX(_msgSender()).onTransferIntoVaultSuccessfullyDone(operator, from, tokenIds, amounts, data)

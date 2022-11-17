@@ -4,6 +4,8 @@
 
 pragma solidity 0.8.6;
 
+import "hardhat/console.sol";
+
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
@@ -16,13 +18,20 @@ import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 
 import "./ICarbonReceipt.sol";
 
+interface CarbonReceipt55Errors {
+    /// `operator` must have minter role to mint
+    /// @param operator Operator needs minter role
+    error ErrMinterRoleRequired(address operator);
+}
+
 contract CarbonReceipt55 is
     Context,
     AccessControlEnumerable,
     ReentrancyGuard,
     ICarbonReceipt,
     ERC1155Burnable,
-    ERC1155Supply
+    ERC1155Supply,
+    CarbonReceipt55Errors
 {
     struct ReceiptData {
         uint256 originalTokenId;
@@ -40,7 +49,10 @@ contract CarbonReceipt55 is
     mapping(uint256 => ReceiptData[]) _receipts;
 
     modifier onlyMinter() {
-        require(hasRole(MINTER_ROLE, _msgSender()), "CarbonReceipt55: must have minter role to mint");
+        if (!hasRole(MINTER_ROLE, _msgSender())) {
+            revert ErrMinterRoleRequired(_msgSender());
+        }
+
         _;
     }
 
@@ -52,6 +64,22 @@ contract CarbonReceipt55 is
 
         _setupRole(MINTER_ROLE, _msgSender());
         _setupRole(PAUSER_ROLE, _msgSender());
+    }
+
+    function delegatePermissionsTo(address minter) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        revokeRole(MINTER_ROLE, getRoleMember(MINTER_ROLE, 0));
+        // revokeRole(DEFAULT_ADMIN_ROLE, getRoleMember(DEFAULT_ADMIN_ROLE, 0));
+
+        _grantRole(MINTER_ROLE, minter);
+        // _grantRole(DEFAULT_ADMIN_ROLE, minter);
+    }
+
+    function name() public view returns (string memory) {
+        return _name;
+    }
+
+    function symbol() public view returns (string memory) {
+        return _symbol;
     }
 
     function receiptDataCount(uint256 tokenId) external view returns (uint256) {
@@ -133,4 +161,8 @@ contract CarbonReceipt55 is
             interfaceId == type(AccessControlEnumerable).interfaceId ||
             super.supportsInterface(interfaceId);
     }
+
+    /*function test() public view returns(bytes4) {
+        return type(IAccessControlEnumerable).interfaceId;
+    }*/
 }
