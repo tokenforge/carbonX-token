@@ -12,13 +12,24 @@ import {
     CarbonX
 } from "../typechain";
 import {createSignature} from "./lib/signatures";
-import {createContracts, getCarbonTokenMockNotAccepting} from "./lib/factory";
+import {
+    createContracts, getCarbonTokenMockAssertDuringAccepting,
+    getCarbonTokenMockNotAccepting,
+    getCarbonTokenMockThrowingDuringAccepting
+} from "./lib/factory";
 
 chai.use(chaiAsPromised);
 const {expect} = chai;
 
 
 describe('CarbonX Vault Tests', () => {
+    const
+        tokenId = 100101,
+        amount = 25001,
+        maxSupply = 1000101,
+        hash = 'NgcFOAfYXwVrmQrUOyB0U5kWU4w1a8Gf2gPPTPBrGTqTl-6qe7ERStbEMamFV4niv1bhFKI5167vzMLApLOEBs0ArvvUiClrRAFb=w60'
+    ;
+
     let token: CarbonX,
         receipt20: CarbonReceipt20,
         receipt55: CarbonReceipt55,
@@ -86,20 +97,12 @@ describe('CarbonX Vault Tests', () => {
         expect(await vault.supportsInterface('0x01ffc9a7')).to.be.true; // IERC1155
     })
 
-    describe('deal with minted tokens', async () => {
-        const
-            tokenId = 100101,
-            amount = 25001,
-            maxSupply = 1000101,
-            hash = 'NgcFOAfYXwVrmQrUOyB0U5kWU4w1a8Gf2gPPTPBrGTqTl-6qe7ERStbEMamFV4niv1bhFKI5167vzMLApLOEBs0ArvvUiClrRAFb=w60'
-        ;
-
+    describe('handling CarbonX when non-accepting the staking mechanism', async () => {
         let sigForAxel: string,
             axelAsSigner: CarbonX
         ;
         
         beforeEach(async () => {
-            
             // We replace the token with a Mock that is not accepting
             
             token = await getCarbonTokenMockNotAccepting(governance, backend);
@@ -116,7 +119,74 @@ describe('CarbonX Vault Tests', () => {
             expect(axelAsSigner.safeTransferFrom(axel.address, vault.address, tokenId, amount, '0x'))
                 .to.be.revertedWithCustomError(vault, 'ErrTransferIntoVaultIsNotAccepted')
                 .withArgs(token.address);
-            
+        })
+
+        it('reverts in batch-mode if the accepted token decides to not accept staking at the moment', async() => {
+            expect(axelAsSigner.safeBatchTransferFrom(axel.address, vault.address, [tokenId], [amount], '0x'))
+                .to.be.revertedWithCustomError(vault, 'ErrTransferIntoVaultIsNotAccepted')
+                .withArgs(token.address);
+        })
+        
+    })
+
+    describe('handling CarbonX when reverting during accepting the staking mechanism', async () => {
+        let sigForAxel: string,
+            axelAsSigner: CarbonX
+        ;
+
+        beforeEach(async () => {
+            // We replace the token with a Mock that is not accepting
+
+            token = await getCarbonTokenMockThrowingDuringAccepting(governance, backend);
+
+            sigForAxel = await createSignature(token, axel.address, tokenId, amount, hash, backend);
+            await token.create(axel.address, tokenId, amount, maxSupply, hash, sigForAxel);
+
+            axelAsSigner = token.connect(axel);
+
+            await vault.addSupportedToken(token.address);
+        })
+
+        it('reverts if the accepted token throws while accepting staking', async() => {
+            await expect(axelAsSigner.safeTransferFrom(axel.address, vault.address, tokenId, amount, '0x'))
+                .to.be.revertedWith('We can\'t handle this current situation properly')             
+        })
+
+        it('reverts in batch-mode if the accepted token throws while accepting staking', async() => {
+            await expect(axelAsSigner.safeBatchTransferFrom(axel.address, vault.address, [tokenId], [amount], '0x'))
+                .to.be.revertedWith('We can\'t handle this current situation properly')
+        })
+        
+    })
+
+    describe('handling CarbonX when asserting during accepting the staking mechanism', async () => {
+        let sigForAxel: string,
+            axelAsSigner: CarbonX
+        ;
+
+        beforeEach(async () => {
+            // We replace the token with a Mock that is not accepting
+
+            token = await getCarbonTokenMockAssertDuringAccepting(governance, backend);
+
+            sigForAxel = await createSignature(token, axel.address, tokenId, amount, hash, backend);
+            await token.create(axel.address, tokenId, amount, maxSupply, hash, sigForAxel);
+
+            axelAsSigner = token.connect(axel);
+
+            await vault.addSupportedToken(token.address);
+        })
+
+        it('reverts if the accepted token throws while accepting staking', async() => {
+            expect(axelAsSigner.safeTransferFrom(axel.address, vault.address, tokenId, amount, '0x'))
+                .to.be.revertedWithCustomError(vault, 'ErrTransferToNotCompatibleImplementer')
+                .withArgs(token.address)
+        })
+
+        it('reverts in batch-mode if the accepted token throws while accepting staking', async() => {
+            expect(axelAsSigner.safeBatchTransferFrom(axel.address, vault.address, [tokenId], [amount], '0x'))
+                .to.be.revertedWithCustomError(vault, 'ErrTransferToNotCompatibleImplementer')
+                .withArgs(token.address)
         })
 
     })

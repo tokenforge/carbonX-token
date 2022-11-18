@@ -30,6 +30,10 @@ interface CarbonVaultErrors {
     /// CarbonVault: transfer into vault not accepted
     /// @param token address of Token
     error ErrTransferIntoVaultIsNotAccepted(address token);
+
+    /// CarbonVault: transfer to not-compatible implementer
+    /// @param token address of Token
+    error ErrTransferToNotCompatibleImplementer(address token);
 }
 
 contract CarbonVault is ERC165, ERC1155Receiver, Ownable, CarbonVaultErrors {
@@ -135,7 +139,7 @@ contract CarbonVault is ERC165, ERC1155Receiver, Ownable, CarbonVaultErrors {
         } catch Error(string memory reason) {
             revert(reason);
         } catch {
-            revert("CarbonVault: transfer to not-compatible implementer");
+            revert ErrTransferToNotCompatibleImplementer(originalToken);
         }
 
         _receiptToken.mintReceipt(from, receiptTokenId, amount, originalTokenId, data);

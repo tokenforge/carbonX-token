@@ -1,9 +1,17 @@
 import {ethers} from "hardhat";
+
 import {
-    CarbonReceipt55__factory, CarbonVault,
+    CarbonReceipt55__factory,
+    CarbonVault,
     CarbonVault__factory,
     CarbonX,
-    CarbonX__factory, CarbonXMockNotAccepting, CarbonXMockNotAccepting__factory
+    CarbonX__factory,
+    // @ts-ignore
+    CarbonXMockAssertsDuringAccepting, CarbonXMockAssertsDuringAccepting__factory,
+    CarbonXMockNotAccepting,
+    CarbonXMockNotAccepting__factory,
+    CarbonXMockThrowsDuringAccepting,
+    CarbonXMockThrowsDuringAccepting__factory
 } from "../../typechain";
 import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
 import {Contract, ContractFactory} from "ethers";
@@ -68,5 +76,21 @@ export async function getCarbonTokenMockNotAccepting(governance: SignerWithAddre
     const token = await tokenFactory.deploy(backend.address, 'ipfs://');
     await token.deployed();
     
+    return token;
+}
+
+export async function getCarbonTokenMockThrowingDuringAccepting(governance: SignerWithAddress, backend: SignerWithAddress): Promise<CarbonXMockThrowsDuringAccepting> {
+    const tokenFactory = (await ethers.getContractFactory('CarbonXMockThrowsDuringAccepting', governance)) as CarbonXMockThrowsDuringAccepting__factory;
+    const token = await tokenFactory.deploy(backend.address, 'ipfs://');
+    await token.deployed();
+
+    return token;
+}
+
+export async function getCarbonTokenMockAssertDuringAccepting(governance: SignerWithAddress, backend: SignerWithAddress): Promise<CarbonXMockAssertsDuringAccepting> {
+    const tokenFactory = (await ethers.getContractFactory('CarbonXMockAssertsDuringAccepting', governance)) as CarbonXMockAssertsDuringAccepting__factory;
+    const token = await tokenFactory.deploy(backend.address, 'ipfs://');
+    await token.deployed();
+
     return token;
 }
