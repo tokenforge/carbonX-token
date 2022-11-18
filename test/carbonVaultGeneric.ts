@@ -13,7 +13,7 @@ import {
 } from "../typechain";
 import {createSignature} from "./lib/signatures";
 import {
-    createContracts, getCarbonTokenMockAssertDuringAccepting,
+    createContracts, getCarbonTokenMockAssertDuringAccepting, getCarbonTokenMockNoAcknowledge,
     getCarbonTokenMockNotAccepting,
     getCarbonTokenMockThrowingDuringAccepting
 } from "./lib/factory";
@@ -119,12 +119,16 @@ describe('CarbonX Vault Tests', () => {
             expect(axelAsSigner.safeTransferFrom(axel.address, vault.address, tokenId, amount, '0x'))
                 .to.be.revertedWithCustomError(vault, 'ErrTransferIntoVaultIsNotAccepted')
                 .withArgs(token.address);
+
+            expect(await token.balanceOf(axel.address, tokenId)).to.eq(amount);
         })
 
         it('reverts in batch-mode if the accepted token decides to not accept staking at the moment', async() => {
             expect(axelAsSigner.safeBatchTransferFrom(axel.address, vault.address, [tokenId], [amount], '0x'))
                 .to.be.revertedWithCustomError(vault, 'ErrTransferIntoVaultIsNotAccepted')
                 .withArgs(token.address);
+
+            expect(await token.balanceOf(axel.address, tokenId)).to.eq(amount);
         })
         
     })
@@ -149,14 +153,17 @@ describe('CarbonX Vault Tests', () => {
 
         it('reverts if the accepted token throws while accepting staking', async() => {
             await expect(axelAsSigner.safeTransferFrom(axel.address, vault.address, tokenId, amount, '0x'))
-                .to.be.revertedWith('We can\'t handle this current situation properly')             
+                .to.be.revertedWith('We can\'t handle this current situation properly')
+
+            expect(await token.balanceOf(axel.address, tokenId)).to.eq(amount);
         })
 
         it('reverts in batch-mode if the accepted token throws while accepting staking', async() => {
             await expect(axelAsSigner.safeBatchTransferFrom(axel.address, vault.address, [tokenId], [amount], '0x'))
                 .to.be.revertedWith('We can\'t handle this current situation properly')
+
+            expect(await token.balanceOf(axel.address, tokenId)).to.eq(amount);
         })
-        
     })
 
     describe('handling CarbonX when asserting during accepting the staking mechanism', async () => {
@@ -181,16 +188,54 @@ describe('CarbonX Vault Tests', () => {
             expect(axelAsSigner.safeTransferFrom(axel.address, vault.address, tokenId, amount, '0x'))
                 .to.be.revertedWithCustomError(vault, 'ErrTransferToNotCompatibleImplementer')
                 .withArgs(token.address)
+            
+            expect(await token.balanceOf(axel.address, tokenId)).to.eq(amount);
         })
 
         it('reverts in batch-mode if the accepted token throws while accepting staking', async() => {
             expect(axelAsSigner.safeBatchTransferFrom(axel.address, vault.address, [tokenId], [amount], '0x'))
                 .to.be.revertedWithCustomError(vault, 'ErrTransferToNotCompatibleImplementer')
                 .withArgs(token.address)
-        })
 
+            expect(await token.balanceOf(axel.address, tokenId)).to.eq(amount);
+        })
     })
 
+    describe('handling CarbonX properly when acknowledge did not happen as expected', async () => {
+        let sigForAxel: string,
+            axelAsSigner: CarbonX
+        ;
+
+        beforeEach(async () => {
+            // We replace the token with a Mock that is not accepting
+
+            token = await getCarbonTokenMockNoAcknowledge(governance, backend);
+
+            sigForAxel = await createSignature(token, axel.address, tokenId, amount, hash, backend);
+            await token.create(axel.address, tokenId, amount, maxSupply, hash, sigForAxel);
+
+            axelAsSigner = token.connect(axel);
+
+            await vault.addSupportedToken(token.address);
+        })
+
+        it('reverts if the acknowledge did not happen at the end of staking', async() => {
+            expect(axelAsSigner.safeTransferFrom(axel.address, vault.address, tokenId, amount, '0x'))
+                .to.be.revertedWithCustomError(vault, 'ErrAcknowledgeFailRejectedTokens')
+                .withArgs(token.address)
+
+            expect(await token.balanceOf(axel.address, tokenId)).to.eq(amount);
+        })
+
+        it('reverts in batch-mode if the acknowledge did not happen at the end of staking', async() => {
+            expect(axelAsSigner.safeBatchTransferFrom(axel.address, vault.address, [tokenId], [amount], '0x'))
+                .to.be.revertedWithCustomError(vault, 'ErrAcknowledgeFailRejectedTokens')
+                .withArgs(token.address)
+
+            expect(await token.balanceOf(axel.address, tokenId)).to.eq(amount);
+        })
+    })
+    
 });
 
 export function ether(e: BigNumberish): BigNumber {

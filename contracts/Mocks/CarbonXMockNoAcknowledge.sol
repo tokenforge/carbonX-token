@@ -6,18 +6,17 @@ pragma solidity 0.8.6;
 
 import "../CarbonX.sol";
 
-contract CarbonXMockAssertsDuringAccepting is CarbonX {
+contract CarbonXMockNoAcknowledge is CarbonX {
     constructor(address signer_, string memory baseUri_) CarbonX(signer_, baseUri_) {}
 
-    function isTransferIntoVaultAccepted(
+    function onTransferIntoVaultSuccessfullyDone(
         address,
         address,
         uint256[] memory,
         uint256[] memory,
         bytes memory
-    ) public view virtual override returns (bool) {
-        assert(false);
-        // solhint-disable-next-line
-        return false;
+    ) public virtual override returns (bytes4) {
+        // it returns another selector than expected
+        return this.isTransferIntoVaultAccepted.selector;
     }
 }

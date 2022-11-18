@@ -34,6 +34,10 @@ interface CarbonVaultErrors {
     /// CarbonVault: transfer to not-compatible implementer
     /// @param token address of Token
     error ErrTransferToNotCompatibleImplementer(address token);
+
+    /// CarbonVault: ICarbonX rejected tokens
+    /// @param token address of Token
+    error ErrAcknowledgeFailRejectedTokens(address token);
 }
 
 contract CarbonVault is ERC165, ERC1155Receiver, Ownable, CarbonVaultErrors {
@@ -150,7 +154,7 @@ contract CarbonVault is ERC165, ERC1155Receiver, Ownable, CarbonVaultErrors {
             ICarbonX(_msgSender()).onTransferIntoVaultSuccessfullyDone(operator, from, tokenIds, amounts, data)
         returns (bytes4 response) {
             if (response != ICarbonX.onTransferIntoVaultSuccessfullyDone.selector) {
-                revert("CarbonVault: ICarbonX rejected tokens");
+                revert ErrAcknowledgeFailRejectedTokens(originalToken);
             }
         } catch Error(string memory reason) {
             revert(reason);
