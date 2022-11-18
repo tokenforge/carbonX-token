@@ -45,8 +45,6 @@ describe('CarbonX Vault Tests', () => {
         
         expect(token.address).to.properAddress;
 
-        
-        console.log("Axel: ", axel.address)
         expect(vault.address).to.properAddress;
     });
 
