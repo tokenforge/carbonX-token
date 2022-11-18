@@ -8,13 +8,15 @@ import {
     CarbonX__factory,
     // @ts-ignore
     CarbonXMockAssertsDuringAccepting,
-    CarbonXMockAssertsDuringAccepting__factory,
+    CarbonXMockAssertsDuringAccepting__factory, CarbonXMockAssertsDuringAcknowledge,
     CarbonXMockNoAcknowledge,
     CarbonXMockNoAcknowledge__factory,
     CarbonXMockNotAccepting,
     CarbonXMockNotAccepting__factory,
     CarbonXMockThrowsDuringAccepting,
-    CarbonXMockThrowsDuringAccepting__factory
+    CarbonXMockThrowsDuringAccepting__factory,
+    CarbonXMockThrowsDuringAcknowledge,
+    CarbonXMockThrowsDuringAcknowledge__factory
 } from "../../typechain";
 import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
 import {Contract, ContractFactory} from "ethers";
@@ -100,6 +102,22 @@ export async function getCarbonTokenMockAssertDuringAccepting(governance: Signer
 
 export async function getCarbonTokenMockNoAcknowledge(governance: SignerWithAddress, backend: SignerWithAddress): Promise<CarbonXMockNoAcknowledge> {
     const tokenFactory = (await ethers.getContractFactory('CarbonXMockNoAcknowledge', governance)) as CarbonXMockNoAcknowledge__factory;
+    const token = await tokenFactory.deploy(backend.address, 'ipfs://');
+    await token.deployed();
+
+    return token;
+}
+
+export async function getCarbonTokenMockThrowsDuringAcknowledge(governance: SignerWithAddress, backend: SignerWithAddress): Promise<CarbonXMockThrowsDuringAcknowledge> {
+    const tokenFactory = (await ethers.getContractFactory('CarbonXMockThrowsDuringAcknowledge', governance)) as CarbonXMockThrowsDuringAcknowledge__factory;
+    const token = await tokenFactory.deploy(backend.address, 'ipfs://');
+    await token.deployed();
+
+    return token;
+}
+
+export async function getCarbonTokenMockAssertsDuringAcknowledge(governance: SignerWithAddress, backend: SignerWithAddress): Promise<CarbonXMockAssertsDuringAcknowledge> {
+    const tokenFactory = (await ethers.getContractFactory('CarbonXMockAssertsDuringAcknowledge', governance)) as CarbonXMockThrowsDuringAcknowledge__factory;
     const token = await tokenFactory.deploy(backend.address, 'ipfs://');
     await token.deployed();
 

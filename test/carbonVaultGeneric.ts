@@ -13,9 +13,13 @@ import {
 } from "../typechain";
 import {createSignature} from "./lib/signatures";
 import {
-    createContracts, getCarbonTokenMockAssertDuringAccepting, getCarbonTokenMockNoAcknowledge,
+    createContracts,
+    getCarbonTokenMockAssertDuringAccepting,
+    getCarbonTokenMockAssertsDuringAcknowledge,
+    getCarbonTokenMockNoAcknowledge,
     getCarbonTokenMockNotAccepting,
-    getCarbonTokenMockThrowingDuringAccepting
+    getCarbonTokenMockThrowingDuringAccepting,
+    getCarbonTokenMockThrowsDuringAcknowledge
 } from "./lib/factory";
 
 chai.use(chaiAsPromised);
@@ -235,7 +239,74 @@ describe('CarbonX Vault Tests', () => {
             expect(await token.balanceOf(axel.address, tokenId)).to.eq(amount);
         })
     })
-    
+
+    describe('handling CarbonX properly when acknowledge reverts unexpectedly', async () => {
+        let sigForAxel: string,
+            axelAsSigner: CarbonX
+        ;
+
+        beforeEach(async () => {
+            // We replace the token with a Mock that is not accepting
+
+            token = await getCarbonTokenMockThrowsDuringAcknowledge(governance, backend);
+
+            sigForAxel = await createSignature(token, axel.address, tokenId, amount, hash, backend);
+            await token.create(axel.address, tokenId, amount, maxSupply, hash, sigForAxel);
+
+            axelAsSigner = token.connect(axel);
+
+            await vault.addSupportedToken(token.address);
+        })
+
+        it('reverts if the acknowledge did not happen at the end of staking', async() => {
+            await expect(axelAsSigner.safeTransferFrom(axel.address, vault.address, tokenId, amount, '0x'))
+                .to.be.revertedWith('Something happened')
+
+            expect(await token.balanceOf(axel.address, tokenId)).to.eq(amount);
+        })
+
+        it('reverts in batch-mode if the acknowledge did not happen at the end of staking', async() => {
+            await expect(axelAsSigner.safeBatchTransferFrom(axel.address, vault.address, [tokenId], [amount], '0x'))
+                .to.be.revertedWith('Something happened')
+
+            expect(await token.balanceOf(axel.address, tokenId)).to.eq(amount);
+        })
+    })
+
+    describe('handling CarbonX properly when acknowledge asserts unexpectedly', async () => {
+        let sigForAxel: string,
+            axelAsSigner: CarbonX
+        ;
+
+        beforeEach(async () => {
+            // We replace the token with a Mock that is not accepting
+
+            token = await getCarbonTokenMockAssertsDuringAcknowledge(governance, backend);
+
+            sigForAxel = await createSignature(token, axel.address, tokenId, amount, hash, backend);
+            await token.create(axel.address, tokenId, amount, maxSupply, hash, sigForAxel);
+
+            axelAsSigner = token.connect(axel);
+
+            await vault.addSupportedToken(token.address);
+        })
+
+        it('reverts if the acknowledge did not happen at the end of staking', async() => {
+            expect(axelAsSigner.safeTransferFrom(axel.address, vault.address, tokenId, amount, '0x'))
+                .to.be.revertedWithCustomError(vault, 'ErrTransferToNotCompatibleImplementer')
+                .withArgs(token.address)
+
+            expect(await token.balanceOf(axel.address, tokenId)).to.eq(amount);
+        })
+
+        it('reverts in batch-mode if the acknowledge did not happen at the end of staking', async() => {
+            expect(axelAsSigner.safeBatchTransferFrom(axel.address, vault.address, [tokenId], [amount], '0x'))
+                .to.be.revertedWithCustomError(vault, 'ErrTransferToNotCompatibleImplementer')
+                .withArgs(token.address)
+
+            expect(await token.balanceOf(axel.address, tokenId)).to.eq(amount);
+        })
+    })    
 });
 
 export function ether(e: BigNumberish): BigNumber {
