@@ -159,7 +159,7 @@ contract CarbonVault is ERC165, ERC1155Receiver, Ownable, CarbonVaultErrors {
         } catch Error(string memory reason) {
             revert(reason);
         } catch {
-            revert("CarbonVault: transfer to not-compatible implementer");
+            revert ErrTransferToNotCompatibleImplementer(originalToken);
         }
 
         return this.onERC1155Received.selector;
