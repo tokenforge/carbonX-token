@@ -8,6 +8,7 @@ import {ContractTransaction} from "ethers";
 import {
     CarbonReceipt55, CarbonReceipt55__factory,
 } from "../typechain";
+import {getReMintAttackerMock} from "./lib/factory";
 
 chai.use(chaiAsPromised);
 const {expect} = chai;
@@ -64,7 +65,25 @@ describe('Carbon Receipt1155 Tests', () => {
             .to.be.revertedWithCustomError(receipt, 'ErrMinterRoleRequired')
             .withArgs(chantal.address)
     })
-    
+
+    it('will revert when attacker will try to mint again with Reentrancy-Attack', async() => {
+        const attacker = await getReMintAttackerMock(governance, receipt.address);
+        await receipt.grantRole(await receipt.MINTER_ROLE(), attacker.address);
+
+        await expect(receipt.mintReceipt(attacker.address, 123, 3, 100, '0x'))
+            .to.be.revertedWith('ReentrancyGuard: reentrant call');
+    })
+
+    it('will revert when attacker will try to batch-mint again with Reentrancy-Attack', async() => {
+        const attacker = await getReMintAttackerMock(governance, receipt.address);
+        await receipt.grantRole(await receipt.MINTER_ROLE(), attacker.address);
+        
+        await attacker.setBatchOrNot(1);
+
+        await expect(receipt.batchMintReceipt(attacker.address, [123], [3], [100], '0x'))
+            .to.be.revertedWith('ReentrancyGuard: reentrant call');
+    })
+
     describe('can mint receipt tokens', async() => {
         const tokenId = 123,
             amount = 42,

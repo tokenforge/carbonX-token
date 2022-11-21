@@ -8,15 +8,18 @@ import {
     CarbonX__factory,
     // @ts-ignore
     CarbonXMockAssertsDuringAccepting,
-    CarbonXMockAssertsDuringAccepting__factory, CarbonXMockAssertsDuringAcknowledge,
+    CarbonXMockAssertsDuringAccepting__factory,
+    CarbonXMockAssertsDuringAcknowledge,
     CarbonXMockNoAcknowledge,
     CarbonXMockNoAcknowledge__factory,
     CarbonXMockNotAccepting,
-    CarbonXMockNotAccepting__factory, CarbonXMockReentrancyAttack, CarbonXMockReentrancyAttack__factory,
+    CarbonXMockNotAccepting__factory,
+    CarbonXMockReentrancyAttack,
+    CarbonXMockReentrancyAttack__factory,
     CarbonXMockThrowsDuringAccepting,
     CarbonXMockThrowsDuringAccepting__factory,
     CarbonXMockThrowsDuringAcknowledge,
-    CarbonXMockThrowsDuringAcknowledge__factory
+    CarbonXMockThrowsDuringAcknowledge__factory, ReMinterAttacker, ReMinterAttacker__factory
 } from "../../typechain";
 import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
 import {Contract, ContractFactory} from "ethers";
@@ -127,6 +130,15 @@ export async function getCarbonTokenMockAssertsDuringAcknowledge(governance: Sig
 export async function getCarbonTokenMockReentrancyAttack(governance: SignerWithAddress, backend: SignerWithAddress, vault: string): Promise<CarbonXMockReentrancyAttack> {
     const tokenFactory = (await ethers.getContractFactory('CarbonXMockReentrancyAttack', governance)) as CarbonXMockReentrancyAttack__factory;
     const token = await tokenFactory.deploy(backend.address, 'ipfs://', vault);
+    await token.deployed();
+
+    return token;
+}
+
+
+export async function getReMintAttackerMock(governance: SignerWithAddress, receiptToken: string): Promise<ReMinterAttacker> {
+    const tokenFactory = (await ethers.getContractFactory('ReMinterAttacker', governance)) as ReMinterAttacker__factory;
+    const token = await tokenFactory.deploy(receiptToken);
     await token.deployed();
 
     return token;

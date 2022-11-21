@@ -11,6 +11,7 @@ import {
     CarbonVault,
 
 } from "../typechain";
+import {getReMintAttackerMock} from "./lib/factory";
 
 chai.use(chaiAsPromised);
 const {expect} = chai;
@@ -68,7 +69,7 @@ describe('Carbon Receipt20 Tests', () => {
             .to.be.revertedWithCustomError(receipt, 'ErrMinterRoleRequired')
             .withArgs(chantal.address)
     })
-    
+
     describe('can mint receipt tokens', async() => {
         
         const tokenId = 123,

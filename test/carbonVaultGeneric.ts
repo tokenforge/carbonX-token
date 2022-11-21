@@ -19,7 +19,7 @@ import {
     getCarbonTokenMockAssertDuringAccepting,
     getCarbonTokenMockAssertsDuringAcknowledge,
     getCarbonTokenMockNoAcknowledge,
-    getCarbonTokenMockNotAccepting, getCarbonTokenMockReentrancyAttack,
+    getCarbonTokenMockNotAccepting, getCarbonTokenMockReentrancyAttack, 
     getCarbonTokenMockThrowingDuringAccepting,
     getCarbonTokenMockThrowsDuringAcknowledge
 } from "./lib/factory";
@@ -400,9 +400,8 @@ describe('CarbonX Vault Tests', () => {
 
             expect(await token.balanceOf(axel.address, tokenId)).to.eq(amount);
         })
-        
     })
-
+    
 });
 
 export function ether(e: BigNumberish): BigNumber {

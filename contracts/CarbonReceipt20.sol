@@ -17,7 +17,7 @@ interface CarbonReceipt20Errors {
     error ErrMinterRoleRequired(address operator);
 }
 
-contract CarbonReceipt20 is ICarbonReceipt, ERC20PresetMinterPauser, ReentrancyGuard, CarbonReceipt20Errors {
+contract CarbonReceipt20 is ICarbonReceipt, ERC20PresetMinterPauser, CarbonReceipt20Errors {
     modifier onlyMinter() {
         if (!hasRole(MINTER_ROLE, _msgSender())) {
             revert ErrMinterRoleRequired(_msgSender());
@@ -42,7 +42,7 @@ contract CarbonReceipt20 is ICarbonReceipt, ERC20PresetMinterPauser, ReentrancyG
         uint256 amount,
         uint256 /*originalTokenId*/,
         bytes memory /*data*/
-    ) public override onlyMinter nonReentrant {
+    ) public override onlyMinter {
         mint(to, amount * (10 ** this.decimals()));
     }
 
@@ -55,7 +55,7 @@ contract CarbonReceipt20 is ICarbonReceipt, ERC20PresetMinterPauser, ReentrancyG
         uint256[] memory amounts,
         uint256[] memory /*originalTokenId*/,
         bytes memory /*data*/
-    ) public override onlyMinter nonReentrant {
+    ) public override onlyMinter {
         for (uint256 i = 0; i < tokenIds.length; i++) {
             mint(to, amounts[i] * (10 ** this.decimals()));
         }
