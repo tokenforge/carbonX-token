@@ -1,6 +1,6 @@
 {
   "name": "carbonx-contracts",
-  "version": "0.1.0",
+  "version": "0.5.0",
   "description": "CarbonX - powered by TokenForge GmbH, Berlin",
   "main": "index.js",
   "scripts": {
