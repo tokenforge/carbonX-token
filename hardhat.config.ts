@@ -32,7 +32,7 @@ const config: HardhatUserConfig = {
     },
 
     namedAccounts: {
-        deployer: 0,
+        deployer: 2,
         admin: 0,
         backend: 1,
     },
