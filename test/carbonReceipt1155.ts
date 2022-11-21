@@ -12,7 +12,6 @@ import {
 chai.use(chaiAsPromised);
 const {expect} = chai;
 
-
 describe('Carbon Receipt1155 Tests', () => {
     let tokenFactory: CarbonReceipt55__factory,
         receipt: CarbonReceipt55,
@@ -38,8 +37,8 @@ describe('Carbon Receipt1155 Tests', () => {
     })
 
     it('reverts when non-admins will try to release permissions', async() => {
-        await expect(receipt.connect(ben).delegatePermissionsTo(ben.address))
-            .to.be.revertedWith(`AccessControl: account ${ben.address.toLowerCase()} is missing role ${await receipt.DEFAULT_ADMIN_ROLE()}`);
+        await expect(receipt.connect(chantal).delegatePermissionsTo(chantal.address))
+            .to.be.revertedWith(`AccessControl: account ${chantal.address.toLowerCase()} is missing role ${await receipt.DEFAULT_ADMIN_ROLE()}`);
     })
 
     it('wont reverts when an admin is trying to release permissions', async() => {
@@ -67,7 +66,6 @@ describe('Carbon Receipt1155 Tests', () => {
     })
     
     describe('can mint receipt tokens', async() => {
-        
         const tokenId = 123,
             amount = 42,
             originalTokenId = 7
@@ -103,8 +101,6 @@ describe('Carbon Receipt1155 Tests', () => {
             await expect(receipt.receiptData(tokenId, 1)).to.revertedWith('Index out of Bounds')
         })        
         
-        
     })
-
 });
 
