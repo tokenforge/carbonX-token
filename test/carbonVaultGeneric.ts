@@ -4,12 +4,14 @@ import chaiAsPromised from 'chai-as-promised';
 
 import {SignerWithAddress} from '@nomiclabs/hardhat-ethers/signers';
 
+import {impersonateAccount, setBalance} from "@nomicfoundation/hardhat-network-helpers";
+
 import {BigNumber, BigNumberish} from "ethers";
 import {
     CarbonReceipt20,
     CarbonReceipt20__factory, CarbonReceipt55, CarbonReceipt55__factory,
     CarbonVault,
-    CarbonX
+    CarbonX, 
 } from "../typechain";
 import {createSignature} from "./lib/signatures";
 import {
@@ -31,6 +33,7 @@ describe('CarbonX Vault Tests', () => {
         tokenId = 100101,
         amount = 25001,
         maxSupply = 1000101,
+        initialBalanceForContract = ethers.utils.parseUnits('50', "ether"),
         hash = 'NgcFOAfYXwVrmQrUOyB0U5kWU4w1a8Gf2gPPTPBrGTqTl-6qe7ERStbEMamFV4niv1bhFKI5167vzMLApLOEBs0ArvvUiClrRAFb=w60'
     ;
 
@@ -42,7 +45,9 @@ describe('CarbonX Vault Tests', () => {
         ben: SignerWithAddress,
         chantal: SignerWithAddress,
         governance: SignerWithAddress,
-        backend: SignerWithAddress
+        backend: SignerWithAddress,
+
+        vaultMock: CarbonVault
     ;
 
     beforeEach(async () => {
@@ -101,9 +106,28 @@ describe('CarbonX Vault Tests', () => {
         expect(await vault.supportsInterface('0x01ffc9a7')).to.be.true; // IERC1155
     })
 
+    async function prepareCarbonTokenWithImpersonation(token: CarbonX) {
+        await impersonateAccount(token.address);
+        await setBalance(token.address, initialBalanceForContract);
+
+        const contractSigner = await ethers.getSigner(token.address);
+
+        const sigForAxel = await createSignature(token, axel.address, tokenId, amount, hash, backend);
+        await token.create(axel.address, tokenId, amount, maxSupply, hash, sigForAxel);
+
+        const axelAsSigner = token.connect(axel);
+
+        await vault.addSupportedToken(token.address);
+        
+        return {
+            vaultMock: vault.connect(contractSigner),
+            axelAsSigner,
+        }
+    }
+
     describe('handling CarbonX when non-accepting the staking mechanism', async () => {
-        let sigForAxel: string,
-            axelAsSigner: CarbonX
+        let axelAsSigner: CarbonX,
+            vaultMock: CarbonVault
         ;
         
         beforeEach(async () => {
@@ -111,26 +135,31 @@ describe('CarbonX Vault Tests', () => {
             
             token = await getCarbonTokenMockNotAccepting(governance, backend);
 
-            sigForAxel = await createSignature(token, axel.address, tokenId, amount, hash, backend);
-            await token.create(axel.address, tokenId, amount, maxSupply, hash, sigForAxel);
-            
-            axelAsSigner = token.connect(axel);
-            
-            await vault.addSupportedToken(token.address);
+            ({vaultMock, axelAsSigner} = await prepareCarbonTokenWithImpersonation(token));
         })
 
         it('reverts if the accepted token decides to not accept staking at the moment', async() => {
-            expect(axelAsSigner.safeTransferFrom(axel.address, vault.address, tokenId, amount, '0x'))
+            // On the CarbonVault-Receiver-side, we expect this:
+            await expect(vaultMock.onERC1155Received(axel.address, axel.address, tokenId, amount, '0x'))
                 .to.be.revertedWithCustomError(vault, 'ErrTransferIntoVaultIsNotAccepted')
-                .withArgs(token.address);
+                .withArgs(token.address)
 
+            // and the encapsulated ERC1155 this:             
+            await expect(axelAsSigner.safeTransferFrom(axel.address, vault.address, tokenId, amount, '0x'))
+                .to.be.revertedWith('ERC1155: transfer to non-ERC1155Receiver implementer');
+            
             expect(await token.balanceOf(axel.address, tokenId)).to.eq(amount);
         })
 
         it('reverts in batch-mode if the accepted token decides to not accept staking at the moment', async() => {
-            expect(axelAsSigner.safeBatchTransferFrom(axel.address, vault.address, [tokenId], [amount], '0x'))
+            // On the CarbonVault-Receiver-side, we expect this:
+            await expect(vaultMock.onERC1155BatchReceived(axel.address, axel.address, [tokenId], [amount], '0x'))
                 .to.be.revertedWithCustomError(vault, 'ErrTransferIntoVaultIsNotAccepted')
-                .withArgs(token.address);
+                .withArgs(token.address)
+
+            // and the encapsulated ERC1155 this:             
+            await expect(axelAsSigner.safeBatchTransferFrom(axel.address, vault.address, [tokenId], [amount], '0x'))
+                .to.be.revertedWith('ERC1155: transfer to non-ERC1155Receiver implementer');
 
             expect(await token.balanceOf(axel.address, tokenId)).to.eq(amount);
         })
@@ -138,8 +167,8 @@ describe('CarbonX Vault Tests', () => {
     })
 
     describe('handling CarbonX when reverting during accepting the staking mechanism', async () => {
-        let sigForAxel: string,
-            axelAsSigner: CarbonX
+        let axelAsSigner: CarbonX,
+            vaultMock: CarbonVault
         ;
 
         beforeEach(async () => {
@@ -147,15 +176,15 @@ describe('CarbonX Vault Tests', () => {
 
             token = await getCarbonTokenMockThrowingDuringAccepting(governance, backend);
 
-            sigForAxel = await createSignature(token, axel.address, tokenId, amount, hash, backend);
-            await token.create(axel.address, tokenId, amount, maxSupply, hash, sigForAxel);
-
-            axelAsSigner = token.connect(axel);
-
-            await vault.addSupportedToken(token.address);
+            ({vaultMock, axelAsSigner} = await prepareCarbonTokenWithImpersonation(token));
         })
 
         it('reverts if the accepted token throws while accepting staking', async() => {
+            // On the CarbonVault-Receiver-side, we expect this:
+            await expect(vaultMock.onERC1155Received(axel.address, axel.address, tokenId, amount, '0x'))
+                .to.be.revertedWith('We can\'t handle this current situation properly')
+
+            // and the encapsulated ERC1155 this:
             await expect(axelAsSigner.safeTransferFrom(axel.address, vault.address, tokenId, amount, '0x'))
                 .to.be.revertedWith('We can\'t handle this current situation properly')
 
@@ -163,6 +192,11 @@ describe('CarbonX Vault Tests', () => {
         })
 
         it('reverts in batch-mode if the accepted token throws while accepting staking', async() => {
+            // On the CarbonVault-Receiver-side, we expect this:
+            await expect(vaultMock.onERC1155BatchReceived(axel.address, axel.address, [tokenId], [amount], '0x'))
+                .to.be.revertedWith('We can\'t handle this current situation properly')
+
+            // and the encapsulated ERC1155 this:
             await expect(axelAsSigner.safeBatchTransferFrom(axel.address, vault.address, [tokenId], [amount], '0x'))
                 .to.be.revertedWith('We can\'t handle this current situation properly')
 
@@ -171,8 +205,8 @@ describe('CarbonX Vault Tests', () => {
     })
 
     describe('handling CarbonX when asserting during accepting the staking mechanism', async () => {
-        let sigForAxel: string,
-            axelAsSigner: CarbonX
+        let axelAsSigner: CarbonX,
+            vaultMock: CarbonVault
         ;
 
         beforeEach(async () => {
@@ -180,34 +214,40 @@ describe('CarbonX Vault Tests', () => {
 
             token = await getCarbonTokenMockAssertDuringAccepting(governance, backend);
 
-            sigForAxel = await createSignature(token, axel.address, tokenId, amount, hash, backend);
-            await token.create(axel.address, tokenId, amount, maxSupply, hash, sigForAxel);
-
-            axelAsSigner = token.connect(axel);
-
-            await vault.addSupportedToken(token.address);
+            ({vaultMock, axelAsSigner} = await prepareCarbonTokenWithImpersonation(token));
         })
 
         it('reverts if the accepted token throws while accepting staking', async() => {
-            expect(axelAsSigner.safeTransferFrom(axel.address, vault.address, tokenId, amount, '0x'))
+            // On the CarbonVault-Receiver-side, we expect this:
+            await expect(vaultMock.onERC1155Received(axel.address, axel.address, tokenId, amount, '0x'))
                 .to.be.revertedWithCustomError(vault, 'ErrTransferToNotCompatibleImplementer')
                 .withArgs(token.address)
-            
+
+            // and the encapsulated ERC1155 this:
+            await expect(axelAsSigner.safeTransferFrom(axel.address, vault.address, tokenId, amount, '0x'))
+                .to.be.revertedWith('ERC1155: transfer to non-ERC1155Receiver implementer');
+
             expect(await token.balanceOf(axel.address, tokenId)).to.eq(amount);
         })
 
         it('reverts in batch-mode if the accepted token throws while accepting staking', async() => {
-            expect(axelAsSigner.safeBatchTransferFrom(axel.address, vault.address, [tokenId], [amount], '0x'))
+            // On the CarbonVault-Receiver-side, we expect this:
+            await expect(vaultMock.onERC1155BatchReceived(axel.address, axel.address, [tokenId], [amount], '0x'))
                 .to.be.revertedWithCustomError(vault, 'ErrTransferToNotCompatibleImplementer')
                 .withArgs(token.address)
+
+            // and the encapsulated ERC1155 this:
+            await expect(axelAsSigner.safeBatchTransferFrom(axel.address, vault.address, [tokenId], [amount], '0x'))
+                .to.be.revertedWith('ERC1155: transfer to non-ERC1155Receiver implementer');
+
 
             expect(await token.balanceOf(axel.address, tokenId)).to.eq(amount);
         })
     })
 
     describe('handling CarbonX properly when acknowledge did not happen as expected', async () => {
-        let sigForAxel: string,
-            axelAsSigner: CarbonX
+        let axelAsSigner: CarbonX,
+            vaultMock: CarbonVault
         ;
 
         beforeEach(async () => {
@@ -215,33 +255,38 @@ describe('CarbonX Vault Tests', () => {
 
             token = await getCarbonTokenMockNoAcknowledge(governance, backend);
 
-            sigForAxel = await createSignature(token, axel.address, tokenId, amount, hash, backend);
-            await token.create(axel.address, tokenId, amount, maxSupply, hash, sigForAxel);
-
-            axelAsSigner = token.connect(axel);
-
-            await vault.addSupportedToken(token.address);
+            ({vaultMock, axelAsSigner} = await prepareCarbonTokenWithImpersonation(token));
         })
 
         it('reverts if the acknowledge did not happen at the end of staking', async() => {
-            expect(axelAsSigner.safeTransferFrom(axel.address, vault.address, tokenId, amount, '0x'))
+            // On the CarbonVault-Receiver-side, we expect this:
+            await expect(vaultMock.onERC1155Received(axel.address, axel.address, tokenId, amount, '0x'))
                 .to.be.revertedWithCustomError(vault, 'ErrAcknowledgeFailRejectedTokens')
                 .withArgs(token.address)
+
+            // and the encapsulated ERC1155 this:
+            await expect(axelAsSigner.safeTransferFrom(axel.address, vault.address, tokenId, amount, '0x'))
+                .to.be.revertedWith('ERC1155: transfer to non-ERC1155Receiver implementer')
 
             expect(await token.balanceOf(axel.address, tokenId)).to.eq(amount);
         })
 
         it('reverts in batch-mode if the acknowledge did not happen at the end of staking', async() => {
-            expect(axelAsSigner.safeBatchTransferFrom(axel.address, vault.address, [tokenId], [amount], '0x'))
+            // On the CarbonVault-Receiver-side, we expect this:
+            await expect(vaultMock.onERC1155BatchReceived(axel.address, axel.address, [tokenId], [amount], '0x'))
                 .to.be.revertedWithCustomError(vault, 'ErrAcknowledgeFailRejectedTokens')
                 .withArgs(token.address)
+
+            // and the encapsulated ERC1155 this:
+            await expect(axelAsSigner.safeBatchTransferFrom(axel.address, vault.address, [tokenId], [amount], '0x'))
+                .to.be.revertedWith('ERC1155: transfer to non-ERC1155Receiver implementer')
 
             expect(await token.balanceOf(axel.address, tokenId)).to.eq(amount);
         })
     })
 
     describe('handling CarbonX properly when acknowledge reverts unexpectedly', async () => {
-        let sigForAxel: string,
+        let 
             axelAsSigner: CarbonX
         ;
 
@@ -250,15 +295,15 @@ describe('CarbonX Vault Tests', () => {
 
             token = await getCarbonTokenMockThrowsDuringAcknowledge(governance, backend);
 
-            sigForAxel = await createSignature(token, axel.address, tokenId, amount, hash, backend);
-            await token.create(axel.address, tokenId, amount, maxSupply, hash, sigForAxel);
-
-            axelAsSigner = token.connect(axel);
-
-            await vault.addSupportedToken(token.address);
+            ({vaultMock, axelAsSigner} = await prepareCarbonTokenWithImpersonation(token));
         })
 
         it('reverts if the acknowledge did not happen at the end of staking', async() => {
+            // On the CarbonVault-Receiver-side, we expect this:
+            await expect(vaultMock.onERC1155Received(axel.address, axel.address, tokenId, amount, '0x'))
+                .to.be.revertedWith('Something happened');
+
+            // and the encapsulated ERC1155 this:
             await expect(axelAsSigner.safeTransferFrom(axel.address, vault.address, tokenId, amount, '0x'))
                 .to.be.revertedWith('Something happened')
 
@@ -266,6 +311,11 @@ describe('CarbonX Vault Tests', () => {
         })
 
         it('reverts in batch-mode if the acknowledge did not happen at the end of staking', async() => {
+            // On the CarbonVault-Receiver-side, we expect this:
+            await expect(vaultMock.onERC1155BatchReceived(axel.address, axel.address, [tokenId], [amount], '0x'))
+                .to.be.revertedWith('Something happened');
+
+            // and the encapsulated ERC1155 this:
             await expect(axelAsSigner.safeBatchTransferFrom(axel.address, vault.address, [tokenId], [amount], '0x'))
                 .to.be.revertedWith('Something happened')
 
@@ -274,35 +324,36 @@ describe('CarbonX Vault Tests', () => {
     })
 
     describe('handling CarbonX properly when acknowledge asserts unexpectedly', async () => {
-        let sigForAxel: string,
-            axelAsSigner: CarbonX
+        let axelAsSigner: CarbonX
         ;
-
+        
         beforeEach(async () => {
             // We replace the token with a Mock that is not accepting
-
             token = await getCarbonTokenMockAssertsDuringAcknowledge(governance, backend);
 
-            sigForAxel = await createSignature(token, axel.address, tokenId, amount, hash, backend);
-            await token.create(axel.address, tokenId, amount, maxSupply, hash, sigForAxel);
-
-            axelAsSigner = token.connect(axel);
-
-            await vault.addSupportedToken(token.address);
+            ({vaultMock, axelAsSigner} = await prepareCarbonTokenWithImpersonation(token));
         })
 
         it('reverts if the acknowledge did not happen at the end of staking', async() => {
-            expect(axelAsSigner.safeTransferFrom(axel.address, vault.address, tokenId, amount, '0x'))
+            // On the CarbonVault-Receiver-side, we expect this:
+            await expect(vaultMock.onERC1155Received(axel.address, axel.address, tokenId, amount, '0x'))
                 .to.be.revertedWithCustomError(vault, 'ErrTransferToNotCompatibleImplementer')
                 .withArgs(token.address)
+            
+            // and the encapsulated ERC1155 this:
+            await expect(axelAsSigner.safeTransferFrom(axel.address, vault.address, tokenId, amount, '0x'))
+                .to.be.revertedWith('ERC1155: transfer to non-ERC1155Receiver implementer')
 
             expect(await token.balanceOf(axel.address, tokenId)).to.eq(amount);
         })
 
         it('reverts in batch-mode if the acknowledge did not happen at the end of staking', async() => {
-            expect(axelAsSigner.safeBatchTransferFrom(axel.address, vault.address, [tokenId], [amount], '0x'))
+            await expect(vaultMock.onERC1155BatchReceived(axel.address, axel.address, [tokenId], [amount], '0x'))
                 .to.be.revertedWithCustomError(vault, 'ErrTransferToNotCompatibleImplementer')
                 .withArgs(token.address)
+
+            await expect(axelAsSigner.safeBatchTransferFrom(axel.address, vault.address, [tokenId], [amount], '0x'))
+                .to.be.revertedWith('ERC1155: transfer to non-ERC1155Receiver implementer')
 
             expect(await token.balanceOf(axel.address, tokenId)).to.eq(amount);
         })

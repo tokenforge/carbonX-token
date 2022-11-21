@@ -66,10 +66,8 @@ contract CarbonReceipt55 is
 
     function delegatePermissionsTo(address minter) public onlyRole(DEFAULT_ADMIN_ROLE) {
         revokeRole(MINTER_ROLE, getRoleMember(MINTER_ROLE, 0));
-        // revokeRole(DEFAULT_ADMIN_ROLE, getRoleMember(DEFAULT_ADMIN_ROLE, 0));
 
         _grantRole(MINTER_ROLE, minter);
-        // _grantRole(DEFAULT_ADMIN_ROLE, minter);
     }
 
     function name() public view returns (string memory) {
@@ -159,8 +157,4 @@ contract CarbonReceipt55 is
             interfaceId == type(AccessControlEnumerable).interfaceId ||
             super.supportsInterface(interfaceId);
     }
-
-    /*function test() public view returns(bytes4) {
-        return type(IAccessControlEnumerable).interfaceId;
-    }*/
 }

@@ -159,8 +159,7 @@ contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable, ICarbonX, CarbonXEr
             revert ErrInitialSupplyGreaterThanNaxSupply(tokenId, amount, maxSupply);
         }
 
-        bytes memory data;
-        _mint(to, tokenId, amount, data);
+        _mint(to, tokenId, amount, "");
 
         _maxTokenSupplies[tokenId] = maxSupply;
 
@@ -191,8 +190,7 @@ contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable, ICarbonX, CarbonXEr
             );
         }
 
-        bytes memory data;
-        _mint(to, tokenId, amount, data);
+        _mint(to, tokenId, amount, "");
     }
 
     /// @dev Mints token into msg.sender for existing tokenId to a specific beneficiary
