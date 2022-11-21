@@ -20,7 +20,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         autoMine: true, // speed up deployment on local network (ganache, hardhat), no effect on live networks
     });
 
-    log("Factory: " + instance.address);
+    log("Vault: " + instance.address);
 
     // The transaction that was sent to the network to deploy the Contract
     log("- Transaction: " + instance.transactionHash);

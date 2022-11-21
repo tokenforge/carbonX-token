@@ -3,7 +3,7 @@ import {DeployFunction} from 'hardhat-deploy/types';
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deployments, getNamedAccounts} = hre;
-    const {deploy, execute, log} = deployments;
+    const {deploy, log} = deployments;
 
     const {deployer} = await getNamedAccounts();
     console.log("Deployer", deployer)
@@ -15,7 +15,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         autoMine: true, // speed up deployment on local network (ganache, hardhat), no effect on live networks
     });
 
-    log("Factory: " + instance.address);
+    log("CarbonX: " + instance.address);
 
     // The transaction that was sent to the network to deploy the Contract
     log("- Transaction: " + instance.transactionHash);

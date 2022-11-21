@@ -182,12 +182,12 @@ contract CarbonVault is ERC165, ERC1155Receiver, Ownable, CarbonVaultErrors {
             bool accepted
         ) {
             if (!accepted) {
-                revert("CarbonVault: transfer into vault not accepted");
+                revert ErrTransferIntoVaultIsNotAccepted(originalToken);
             }
         } catch Error(string memory reason) {
             revert(reason);
         } catch {
-            revert("CarbonVault: transfer to not-compatible implementer");
+            revert ErrTransferToNotCompatibleImplementer(originalToken);
         }
 
         uint256[] memory receiptTokenIds = new uint256[](tokenIds.length);
@@ -204,12 +204,12 @@ contract CarbonVault is ERC165, ERC1155Receiver, Ownable, CarbonVaultErrors {
             ICarbonX(_msgSender()).onTransferIntoVaultSuccessfullyDone(operator, from, tokenIds, amounts, data)
         returns (bytes4 response) {
             if (response != ICarbonX.onTransferIntoVaultSuccessfullyDone.selector) {
-                revert("CarbonVault: ICarbonX rejected tokens");
+                revert ErrAcknowledgeFailRejectedTokens(originalToken);
             }
         } catch Error(string memory reason) {
             revert(reason);
         } catch {
-            revert("CarbonVault: transfer to not-compatible implementer");
+            revert ErrTransferToNotCompatibleImplementer(originalToken);
         }
 
         return this.onERC1155BatchReceived.selector;
