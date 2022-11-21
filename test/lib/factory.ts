@@ -12,7 +12,7 @@ import {
     CarbonXMockNoAcknowledge,
     CarbonXMockNoAcknowledge__factory,
     CarbonXMockNotAccepting,
-    CarbonXMockNotAccepting__factory,
+    CarbonXMockNotAccepting__factory, CarbonXMockReentrancyAttack, CarbonXMockReentrancyAttack__factory,
     CarbonXMockThrowsDuringAccepting,
     CarbonXMockThrowsDuringAccepting__factory,
     CarbonXMockThrowsDuringAcknowledge,
@@ -119,6 +119,14 @@ export async function getCarbonTokenMockThrowsDuringAcknowledge(governance: Sign
 export async function getCarbonTokenMockAssertsDuringAcknowledge(governance: SignerWithAddress, backend: SignerWithAddress): Promise<CarbonXMockAssertsDuringAcknowledge> {
     const tokenFactory = (await ethers.getContractFactory('CarbonXMockAssertsDuringAcknowledge', governance)) as CarbonXMockThrowsDuringAcknowledge__factory;
     const token = await tokenFactory.deploy(backend.address, 'ipfs://');
+    await token.deployed();
+
+    return token;
+}
+
+export async function getCarbonTokenMockReentrancyAttack(governance: SignerWithAddress, backend: SignerWithAddress, vault: string): Promise<CarbonXMockReentrancyAttack> {
+    const tokenFactory = (await ethers.getContractFactory('CarbonXMockReentrancyAttack', governance)) as CarbonXMockReentrancyAttack__factory;
+    const token = await tokenFactory.deploy(backend.address, 'ipfs://', vault);
     await token.deployed();
 
     return token;

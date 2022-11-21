@@ -10,6 +10,7 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Receiver.sol";
 
@@ -39,7 +40,7 @@ interface CarbonVaultErrors {
     error ErrAcknowledgeFailRejectedTokens(address token);
 }
 
-contract CarbonVault is ERC165, ERC1155Receiver, Ownable, CarbonVaultErrors {
+contract CarbonVault is ERC165, ERC1155Receiver, Ownable, CarbonVaultErrors, ReentrancyGuard {
     using ECDSA for bytes32;
     using Counters for Counters.Counter;
 
@@ -119,7 +120,7 @@ contract CarbonVault is ERC165, ERC1155Receiver, Ownable, CarbonVaultErrors {
         uint256 tokenId,
         uint256 amount,
         bytes memory data
-    ) public virtual override returns (bytes4) {
+    ) public virtual override nonReentrant returns (bytes4) {
         address originalToken = _msgSender();
         uint256 originalTokenId = tokenId;
 
@@ -170,7 +171,7 @@ contract CarbonVault is ERC165, ERC1155Receiver, Ownable, CarbonVaultErrors {
         uint256[] memory tokenIds,
         uint256[] memory amounts,
         bytes memory data
-    ) public virtual override returns (bytes4) {
+    ) public virtual override nonReentrant returns (bytes4) {
         address originalToken = _msgSender();
         uint256[] memory originalTokenIds = tokenIds;
 

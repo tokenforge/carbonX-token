@@ -11,7 +11,7 @@ import {
     CarbonReceipt20,
     CarbonReceipt20__factory, CarbonReceipt55, CarbonReceipt55__factory,
     CarbonVault,
-    CarbonX, 
+    CarbonX, CarbonXMockReentrancyAttack,
 } from "../typechain";
 import {createSignature} from "./lib/signatures";
 import {
@@ -19,7 +19,7 @@ import {
     getCarbonTokenMockAssertDuringAccepting,
     getCarbonTokenMockAssertsDuringAcknowledge,
     getCarbonTokenMockNoAcknowledge,
-    getCarbonTokenMockNotAccepting,
+    getCarbonTokenMockNotAccepting, getCarbonTokenMockReentrancyAttack,
     getCarbonTokenMockThrowingDuringAccepting,
     getCarbonTokenMockThrowsDuringAcknowledge
 } from "./lib/factory";
@@ -357,7 +357,52 @@ describe('CarbonX Vault Tests', () => {
 
             expect(await token.balanceOf(axel.address, tokenId)).to.eq(amount);
         })
-    })    
+    })
+
+    describe('handling CarbonX properly when bad actor performs reentrancy attack', async () => {
+        let axelAsSigner: CarbonX;
+
+        beforeEach(async () => {
+            // We replace the token with a Mock that is not accepting
+            token = await getCarbonTokenMockReentrancyAttack(governance, backend, vault.address);
+
+            ({vaultMock, axelAsSigner} = await prepareCarbonTokenWithImpersonation(token));
+        })
+
+        it('wont re-entry into the trap', async() => {
+            const attack = token as CarbonXMockReentrancyAttack;
+
+            expect(await attack.counter()).to.eq(0);
+            
+            await attack.setBatchOrNot(0);
+
+            await expect(axelAsSigner.safeTransferFrom(axel.address, vault.address, tokenId, amount, '0x'))
+                .to.be.revertedWith('ReentrancyGuard: reentrant call')
+                //.to.be.revertedWith('ReentrancyMock: failed call');
+               
+            expect(await attack.counter()).to.eq(0); // still Zero because of the revert 
+
+            expect(await token.balanceOf(axel.address, tokenId)).to.eq(amount);
+        })
+
+        it('wont re-entry into the trap', async() => {
+            const attack = token as CarbonXMockReentrancyAttack;
+
+            expect(await attack.counter()).to.eq(0);
+
+            await attack.setBatchOrNot(1);
+            
+            await expect(axelAsSigner.safeBatchTransferFrom(axel.address, vault.address, [tokenId], [amount], '0x'))
+                .to.be.revertedWith('ReentrancyGuard: reentrant call')
+            //.to.be.revertedWith('ReentrancyMock: failed call');
+
+            expect(await attack.counter()).to.eq(0); // still Zero because of the revert 
+
+            expect(await token.balanceOf(axel.address, tokenId)).to.eq(amount);
+        })
+        
+    })
+
 });
 
 export function ether(e: BigNumberish): BigNumber {
