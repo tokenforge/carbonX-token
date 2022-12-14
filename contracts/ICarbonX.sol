@@ -20,4 +20,6 @@ interface ICarbonX {
         uint256[] memory amounts,
         bytes memory data
     ) external returns (bytes4);
+
+    function uri(uint256) external view returns (string memory);
 }

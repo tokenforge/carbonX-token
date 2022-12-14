@@ -146,7 +146,9 @@ contract CarbonVault is ERC165, ERC1155Receiver, Ownable, CarbonVaultErrors, Ree
             revert ErrTransferToNotCompatibleImplementer(originalToken);
         }
 
-        _receiptToken.mintReceipt(from, receiptTokenId, amount, originalTokenId, data);
+        string memory _uri = ICarbonX(originalToken).uri(originalTokenId);
+
+        _receiptToken.mintReceipt(from, receiptTokenId, amount, originalTokenId, _uri, data);
 
         emit CarbonDeposited(receiptTokenId, amount, from, _msgSender(), originalTokenId);
 
@@ -192,12 +194,17 @@ contract CarbonVault is ERC165, ERC1155Receiver, Ownable, CarbonVaultErrors, Ree
         }
 
         uint256[] memory receiptTokenIds = new uint256[](tokenIds.length);
+        string[] memory tokenUris = new string[](tokenIds.length);
+
         for (uint256 i = 0; i < tokenIds.length; i++) {
             receiptTokenIds[i] = _tokenIds.current();
+
+            tokenUris[i] = ICarbonX(originalToken).uri(tokenIds[i]);
+
             _tokenIds.increment();
         }
 
-        _receiptToken.batchMintReceipt(from, receiptTokenIds, amounts, originalTokenIds, data);
+        _receiptToken.batchMintReceipt(from, receiptTokenIds, amounts, originalTokenIds, tokenUris, data);
 
         emit CarbonBatchDeposited(receiptTokenIds, amounts, from, _msgSender(), originalTokenIds);
 
