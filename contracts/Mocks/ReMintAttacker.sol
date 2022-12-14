@@ -4,7 +4,6 @@
 
 pragma solidity 0.8.6;
 
-import "hardhat/console.sol";
 import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Receiver.sol";
 
 import "../CarbonReceipt55.sol";
@@ -30,12 +29,13 @@ contract ReMinterAttacker is ERC1155Receiver {
         bytes memory data
     ) public virtual override returns (bytes4) {
         if (_batchOrNot == 0) {
-            CarbonReceipt55(_receiptToken).mintReceipt(from, tokenId, amount, 1, data);
+            CarbonReceipt55(_receiptToken).mintReceipt(from, tokenId, amount, 1, "", data);
         } else {
             uint256[] memory tokenIds = _asSingletonArray(tokenId);
+            string[] memory tokenUris = new string[](1);
             uint256[] memory amounts = _asSingletonArray(amount);
 
-            CarbonReceipt55(_receiptToken).batchMintReceipt(from, tokenIds, amounts, tokenIds, data);
+            CarbonReceipt55(_receiptToken).batchMintReceipt(from, tokenIds, amounts, tokenIds, tokenUris, data);
         }
 
         return this.onERC1155Received.selector;
@@ -48,8 +48,8 @@ contract ReMinterAttacker is ERC1155Receiver {
         uint256[] memory amounts,
         bytes memory data
     ) public virtual override returns (bytes4) {
-        console.log("BATCJH");
-        CarbonReceipt55(_receiptToken).batchMintReceipt(from, tokenIds, amounts, tokenIds, data);
+        string[] memory tokenUris = new string[](tokenIds.length);
+        CarbonReceipt55(_receiptToken).batchMintReceipt(from, tokenIds, amounts, tokenIds, tokenUris, data);
         return this.onERC1155BatchReceived.selector;
     }
 

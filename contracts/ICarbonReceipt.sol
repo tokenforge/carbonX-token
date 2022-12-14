@@ -10,6 +10,7 @@ interface ICarbonReceipt {
         uint256 tokenId,
         uint256 amount,
         uint256 originalTokenId,
+        string memory tokenUri,
         bytes memory data
     ) external;
 
@@ -18,6 +19,7 @@ interface ICarbonReceipt {
         uint256[] memory tokenIds,
         uint256[] memory amounts,
         uint256[] memory originalTokenIds,
+        string[] memory tokenUris,
         bytes memory data
     ) external;
 }

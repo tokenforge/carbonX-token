@@ -233,7 +233,7 @@ contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable, ICarbonX, CarbonXEr
         super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
     }
 
-    function uri(uint256 id) public view virtual override returns (string memory) {
+    function uri(uint256 id) public view virtual override(ERC1155, ICarbonX) returns (string memory) {
         return _tokenUris[id];
     }
 

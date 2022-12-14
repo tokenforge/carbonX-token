@@ -15,6 +15,10 @@ interface CarbonReceipt20Errors {
     /// `operator` must have minter role to mint
     /// @param operator Operator needs minter role
     error ErrMinterRoleRequired(address operator);
+
+    /// `operator` must have admin role
+    /// @param operator Operator needs admin role
+    error ErrAdminRoleRequired(address operator);
 }
 
 contract CarbonReceipt20 is ICarbonReceipt, ERC20PresetMinterPauser, CarbonReceipt20Errors {
@@ -26,9 +30,17 @@ contract CarbonReceipt20 is ICarbonReceipt, ERC20PresetMinterPauser, CarbonRecei
         _;
     }
 
+    modifier onlyAdmin() {
+        if (!hasRole(DEFAULT_ADMIN_ROLE, _msgSender())) {
+            revert ErrAdminRoleRequired(_msgSender());
+        }
+
+        _;
+    }
+
     constructor(string memory name, string memory symbol) ERC20PresetMinterPauser(name, symbol) {}
 
-    function delegatePermissionsTo(address minter) public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function delegatePermissionsTo(address minter) public onlyAdmin {
         revokeRole(MINTER_ROLE, getRoleMember(MINTER_ROLE, 0));
         _grantRole(MINTER_ROLE, minter);
     }
@@ -41,6 +53,7 @@ contract CarbonReceipt20 is ICarbonReceipt, ERC20PresetMinterPauser, CarbonRecei
         uint256 /*tokenId*/,
         uint256 amount,
         uint256 /*originalTokenId*/,
+        string memory /*tokenUri*/,
         bytes memory /*data*/
     ) public override onlyMinter {
         mint(to, amount * (10 ** this.decimals()));
@@ -54,6 +67,7 @@ contract CarbonReceipt20 is ICarbonReceipt, ERC20PresetMinterPauser, CarbonRecei
         uint256[] memory tokenIds,
         uint256[] memory amounts,
         uint256[] memory /*originalTokenId*/,
+        string[] memory /*tokenUris*/,
         bytes memory /*data*/
     ) public override onlyMinter {
         for (uint256 i = 0; i < tokenIds.length; i++) {

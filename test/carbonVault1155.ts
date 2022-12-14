@@ -104,7 +104,6 @@ describe('CarbonX Vault 1155 Tests', () => {
                 .withArgs(vault.address, ethers.constants.AddressZero, axel.address, currentReceiptTokenIdBefore, amount)
             ;
             
-
             expect(await token.totalSupply(tokenId)).to.eq(amount);
             expect(await token.balanceOf(axel.address, tokenId)).to.eq(0);
             expect(await token.balanceOf(vault.address, tokenId)).to.eq( amount );
@@ -117,11 +116,15 @@ describe('CarbonX Vault 1155 Tests', () => {
 
             const receiptData = await receipt.receiptData(currentReceiptTokenId-1, 0);
             expect(receiptData.originalTokenId).eq(tokenId);
+            
+            // the receipt-token will have the same tokenUri as the original token
+            expect(await receipt.uri(currentReceiptTokenId-1)).to.eq(hash);
+            expect(await token.uri(tokenId)).to.eq(hash);
         });
 
         it('Axel stakes token via batch into Vault', async () => {
-            const sig2ForAxel = await createSignature(token, axel.address, tokenId+1, amount+1, hash, backend);
-            await axelAsMinter.create(axel.address, tokenId+1, amount+1, maxSupply, hash, sig2ForAxel);
+            const sig2ForAxel = await createSignature(token, axel.address, tokenId+1, amount+1, hash + '.2', backend);
+            await axelAsMinter.create(axel.address, tokenId+1, amount+1, maxSupply, hash + '.2', sig2ForAxel);
 
             const currentReceiptTokenIdBefore = (await vault.currentReceiptTokenId()).toNumber();
 
@@ -163,6 +166,12 @@ describe('CarbonX Vault 1155 Tests', () => {
             const receiptData2 = await receipt.receiptData(currentReceiptTokenId-1, 0);
             expect(receiptData2.originalTokenId).eq(tokenId+1);
 
+            // the receipt-tokens will have the same tokenUri as the original tokens
+            expect(await receipt.uri(currentReceiptTokenId-1)).to.eq(hash + '.2');
+            expect(await token.uri(tokenId)).to.eq(hash);
+
+            expect(await receipt.uri(currentReceiptTokenId-2)).to.eq(hash);
+            expect(await token.uri(tokenId)).to.eq(hash);
         });
 
 
