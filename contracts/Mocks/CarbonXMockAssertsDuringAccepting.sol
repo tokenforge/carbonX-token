@@ -7,7 +7,7 @@ pragma solidity 0.8.6;
 import "../CarbonX.sol";
 
 contract CarbonXMockAssertsDuringAccepting is CarbonX {
-    constructor(address signer_, string memory baseUri_) CarbonX(signer_, baseUri_) {}
+    constructor(address signer_, string memory baseUri_) CarbonX("Mock", signer_, baseUri_) {}
 
     function isTransferIntoVaultAccepted(
         address,

@@ -65,15 +65,21 @@ contract CarbonX is ERC1155Burnable, ERC1155Supply, Ownable, ICarbonX, CarbonXEr
         _;
     }
 
-    constructor(address signer_, string memory baseUri_) ERC1155(baseUri_) {
+    string private _name;
+
+    constructor(string memory name_, address signer_, string memory baseUri_) ERC1155(baseUri_) {
         if (signer_ == address(0)) {
             revert ErrSignerMustNotBeZeroAddress();
         }
 
         _signer = signer_;
+        _name = name_;
     }
 
-    /// @notice Helper to know signers address
+    function name() public view returns (string memory) {
+        return _name;
+    }
+
     /// @return the signer address
     function getSigner() public view virtual returns (address) {
         return _signer;

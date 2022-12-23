@@ -28,7 +28,7 @@ describe('CarbonX BasicTests', () => {
     });
 
     it('Will deny a zero-address for signer on ctor', async () => {
-        await expect(tokenFactory.deploy(ethers.constants.AddressZero, 'ipfs://'))
+        await expect(tokenFactory.deploy("Token", ethers.constants.AddressZero, 'ipfs://'))
             .to.be.revertedWithCustomError(tokenFactory, 'ErrSignerMustNotBeZeroAddress');
     })
 
@@ -36,11 +36,15 @@ describe('CarbonX BasicTests', () => {
         let token: CarbonX;
 
         beforeEach(async () => {
-            token = await tokenFactory.deploy(backend.address, 'ipfs://');
+            token = await tokenFactory.deploy("Token", backend.address, 'ipfs://');
             await token.deployed();
 
             expect(token.address).to.properAddress;
         });
+        
+        it('Has the right name', async() => {
+            expect(await token.name()).to.eq('Token');
+        })
 
         it('reverts when changing signer to zero-address', async () => {
             await expect(token.setSigner(ethers.constants.AddressZero))

@@ -55,7 +55,7 @@ export async function createContracts<CarbonReceipt extends Contract, CarbonRece
 ): Promise<{ receipt: CarbonReceipt; vault: CarbonVault; token: CarbonX }>
 {
     const tokenFactory = (await ethers.getContractFactory('CarbonX', governance)) as CarbonX__factory;
-    const token = await tokenFactory.deploy(backend.address, 'ipfs://');
+    const token = await tokenFactory.deploy("CarbonToken", backend.address, 'ipfs://');
     await token.deployed();
 
     const carbonReceiptFactory = (await ethers.getContractFactory(receiptContract, governance)) as ContractFactory;

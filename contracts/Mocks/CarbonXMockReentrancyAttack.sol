@@ -13,7 +13,7 @@ contract CarbonXMockReentrancyAttack is CarbonX {
 
     uint256 _batchOrNot = 0;
 
-    constructor(address signer_, string memory baseUri_, address carbonVault_) CarbonX(signer_, baseUri_) {
+    constructor(address signer_, string memory baseUri_, address carbonVault_) CarbonX("Mock", signer_, baseUri_) {
         _carbonVault = carbonVault_;
     }
 
