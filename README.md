@@ -1,4 +1,4 @@
-# E-Sec Token Contracts
+# CarbonX Token Contracts + Vaults for Retirement
 
 ## Installation / Setup
 
@@ -21,37 +21,26 @@ yarn install
 
 
 ```
-npm run build
-```
-
-or 
-
-```
-yarn run build
+yarn build && yarn test
 ```
 
 
 ### Run unit tests:
 
 ```
-npm run test
+yarn test
 ```
 
-or 
-
-```
-yarn run test
-```
 
 ## Deployment
 
-### Testnet (Rinkeby)
+### Testnet 
 
 Deployment:
 
 
 ```
-npx hardhat run scripts/deploy.js --network rinkeby
+npx hardhat run scripts/deploy.js --network fuji
 ```
 
 Verification:
@@ -61,7 +50,7 @@ Verification:
 ```
 
 ```
-npx hardhat verify --network rinkeby DEPLOYED_CONTRACT_ADDRESS 0xb66e545739be353c962c89db50e75ce20e289df2
+npx hardhat verify --network rinkeby DEPLOYED_CONTRACT_ADDRESS 0x.....
 ```
 
 ## Work with smart contract
@@ -69,7 +58,7 @@ npx hardhat verify --network rinkeby DEPLOYED_CONTRACT_ADDRESS 0xb66e545739be353
 ### hardhat console
 
 ```
-npx hardhat console --network rinkeby
+npx hardhat console --network fuji
 ```
 
 
