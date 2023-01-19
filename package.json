@@ -45,7 +45,7 @@
     "fork:dev": "node ./_scripts.js fork:dev",
     "fork:node": "node ./_scripts.js fork:node",
     "fork:test": "node ./_scripts.js fork:test",
-    "deploy_local": "npx hardhat run scripts/deploy.js --network localhost",
+    "deploy_local": "npx hardhat run scripts/deploy.js --network localhost"
   },
   "repository": {
     "type": "git",
